@@ -17,6 +17,7 @@ model Subscription {
   firstName      String?  @map("first_name")
   lastName       String?  @map("last_name")
   emailAddress   String?  @map("email_address")
+  errorCode      Int?     @db.SmallInt @map("error_code")
   created        DateTime @default(now()) @db.Timestamp(6)
   modified       DateTime @default(now()) @db.Timestamp(6)
   websites       websites @relation(fields: [websiteId], references: [websiteId], map: "FK_subscriptions_websites")

@@ -9,6 +9,7 @@ export type SubscriptionDTO = {
   firstName: string | null;
   lastName: string | null;
   emailAddress: string | null;
+  errorCode: number | null;
   created: Date;
   modified: Date;
 };

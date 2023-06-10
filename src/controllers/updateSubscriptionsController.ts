@@ -1,7 +1,6 @@
 import * as yup from 'yup';
 
 import { updateSubscriptionsInteractor } from '../interactors';
-import type { UpdateSubscriptionsResponse } from '../interactors/updateSubscriptionsInteractor';
 import { UpdateSubscriptionsWebsiteNotFound } from '../interactors/updateSubscriptionsInteractor';
 import { BaseController } from './baseController';
 
