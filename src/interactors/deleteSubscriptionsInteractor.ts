@@ -1,8 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 
-import type { IDateService } from '../services/date';
 import type { ILoggerService } from '../services/logger';
-import type { IUUIDService } from '../services/uuid';
 import type { ResultType } from './result';
 import { Result } from './result';
 import type { IInteractor } from '.';

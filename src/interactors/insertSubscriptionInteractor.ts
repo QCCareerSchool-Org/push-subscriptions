@@ -92,6 +92,7 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
         firstName: subscription.firstName,
         lastName: subscription.lastName,
         emailAddress: subscription.emailAddress,
+        errorCode: subscription.errorCode,
         created: this.dateService.fixPrismaReadDate(subscription.created),
         modified: this.dateService.fixPrismaReadDate(subscription.modified),
       });
