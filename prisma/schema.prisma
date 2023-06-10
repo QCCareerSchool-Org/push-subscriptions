@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Subscription {
+  subscriptionId Bytes    @id @map("subscription_id") @db.Binary(16)
+  websiteId      Bytes    @map("website_id") @db.Binary(16)
+  endpoint       String   @db.VarChar(4096)
+  expirationTime Float?   @map("expiration_time")
+  p256dh         Bytes?   @db.Binary(65)
+  auth           Bytes?   @db.Binary(16)
+  firstName      String?  @map("first_name")
+  lastName       String?  @map("last_name")
+  emailAddress   String?  @map("email_address")
+  created        DateTime @default(now()) @db.Timestamp(6)
+  modified       DateTime @default(now()) @db.Timestamp(6)
+  websites       websites @relation(fields: [websiteId], references: [websiteId], map: "FK_subscriptions_websites")
+
+  @@index([websiteId], map: "FK_subscriptions_websites")
+  @@map("subscriptions")
+}
+
+model websites {
+  websiteId     Bytes          @id @map("website_id") @db.Binary(16)
+  name          String         @unique(map: "name")
+  created       DateTime       @default(now()) @db.Timestamp(6)
+  subscriptions Subscription[]
+}
