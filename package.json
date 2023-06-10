@@ -1,5 +1,5 @@
 {
-  "name": "push",
+  "name": "push-subscriptions",
   "version": "1.0.0",
   "description": "REST API for managing push subscriptions",
   "main": "dist/frameworks/express/index.js",
