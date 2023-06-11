@@ -54,6 +54,13 @@ export class EnvironmentConfigService implements IConfigService {
     this.config = {
       environment,
       port,
+      auth: {
+        cookieDomain: process.env.COOKIE_DOMAIN ?? 'push.qccareerschool.com',
+        cookiePath: process.env.COOKIE_PATH ?? '/',
+        accessCookiePath: process.env.ACCESS_COOKIE_PATH,
+        accessTokenLifetime: process.env.ACCESS_TOKEN_LIFETIME ? parseInt(process.env.ACCESS_TOKEN_LIFETIME, 10) : 30 * 60, // 30-minute default
+        refreshTokenLifetime: process.env.REFRESH_TOKEN_LIFETIME ? parseInt(process.env.REFRESH_TOKEN_LIFETIME, 10) : 30 * 60 * 60 * 24, // 30-day default
+      },
       email: {
         host: smtpHost,
         port: smtpPortNumber,

@@ -4,9 +4,11 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 
+import { CheckAuthenticationMiddleware } from '../../controllers/authentication/checkAuthenticationMiddleware';
 import { NotFoundController } from '../../controllers/notFoundController';
 import { environmentConfigService, winstonLoggerService } from '../../services';
 import { asyncWrapper } from './asyncWrapper';
+import { authenticationRouter } from './authenticationRouter';
 import { globalErrorHandler } from './globalErrorHandler';
 import { router } from './router';
 
@@ -34,6 +36,14 @@ app.use(express.json({ limit: 524_288 })); // 512 KB
 app.use(cors(corsOptions));
 
 app.use('/', router);
+
+app.use('/auth', authenticationRouter);
+
+// all routes added after this will require authentication
+app.use(asyncWrapper(async (req, res, next) => {
+  const middleware = new CheckAuthenticationMiddleware(req, res, next);
+  await middleware.execute();
+}));
 
 // all other routes return 404
 app.use(asyncWrapper(async (req, res) => {

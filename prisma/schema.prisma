@@ -1,10 +1,12 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
+  schemas  = ["push", "general"]
 }
 
 model Subscription {
@@ -25,6 +27,7 @@ model Subscription {
 
   @@index([websiteId], map: "FK_subscriptions_websites")
   @@map("subscriptions")
+  @@schema("push")
 }
 
 model Website {
@@ -35,6 +38,7 @@ model Website {
   subscriptions Subscription[]
 
   @@map("websites")
+  @@schema("push")
 }
 
 model Interest {
@@ -47,6 +51,7 @@ model Interest {
 
   @@unique([websiteId, name], map: "website_id_name")
   @@map("interests")
+  @@schema("push")
 }
 
 model SubscriptionInterest {
@@ -59,4 +64,29 @@ model SubscriptionInterest {
   @@id([subscriptionId, interestId], name: "subscriptionIdInterestId")
   @@index([interestId], map: "FK_subscriptions_interests_interests")
   @@map("subscriptions_interests")
+  @@schema("push")
+}
+
+model User {
+  userId               Int       @id @map("id")
+  username             String    @db.VarChar(50)
+  passwordHash         String?   @db.VarChar(255) @map("pw_hash")
+  salt                 String?   @db.Char(32)
+  password             String?   @db.Char(64)
+  expiry               DateTime? @db.Timestamp()
+  sex                  UserSex
+  firstName            String    @db.VarChar(50) @map("first_name")
+  lastName             String    @db.VarChar(50) @map("last_name")
+  emailAddress         String    @db.VarChar(255) @map("email_address")
+  deleteEnrollmentPriv Boolean   @map("delete_enrollment_priv") @default(false)
+  voidPriv             Boolean   @map("void_priv") @default(false)
+  lastLogin            DateTime? @db.Timestamp @map("last_login")
+  
+  @@map("users")
+  @@schema("general")
+}
+
+enum UserSex {
+  M
+  F
 }
