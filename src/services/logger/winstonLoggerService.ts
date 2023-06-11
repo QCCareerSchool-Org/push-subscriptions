@@ -30,7 +30,7 @@ export class WinstonLoggerService implements ILoggerService {
           secure: environmentConfigService.config.email.mode === 'TLS',
           tags: [ 'push' ],
           to: 'administrator@qccareerschool.com',
-          level: 'error',
+          level: 'warn',
         }),
       ],
     });

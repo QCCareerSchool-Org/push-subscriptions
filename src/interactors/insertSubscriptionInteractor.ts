@@ -104,16 +104,25 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
 
           // add any interests that aren't already present
           if (request.interests) {
-            const interests = await t.interest.findMany({ where: { name: { in: request.interests } } });
+            // look up all the interests that we want to add
+            const interests = await t.interest.findMany({
+              where: {
+                websiteId: website.websiteId,
+                name: { in: request.interests },
+              },
+            });
 
+            // see if any aren't found for this website and log a warning
             const notFound = request.interests.filter(name => !interests.some(i => i.name === name));
             if (notFound.length) {
-              this.logger.warn('Interests not found', notFound);
+              this.logger.error('Interests not found', { websiteName: website.name, interests: notFound });
             }
 
+            // determine which ones aren't already present
             const interestIds = interests.map(i => i.interestId);
             const missingInterestIds = interestIds.filter(i => !existingInterestIds.some(e => e.compare(i) === 0));
 
+            // add the missing subscriptionInterests
             await t.subscriptionInterest.createMany({
               data: missingInterestIds.map(interestId => ({
                 subscriptionId,

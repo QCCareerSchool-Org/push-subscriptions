@@ -2,7 +2,7 @@ import * as yup from 'yup';
 
 import { updateSubscriptionInteractor } from '../interactors';
 import type { UpdateSubscriptionResponse } from '../interactors/updateSubscriptionInteractor';
-import { UpdateSubscriptionWebsiteNotFound } from '../interactors/updateSubscriptionInteractor';
+import { UpdateSubscriptionNotFound, UpdateSubscriptionWebsiteNotFound } from '../interactors/updateSubscriptionInteractor';
 import { BaseController } from './baseController';
 
 type Request = {
@@ -85,6 +85,8 @@ export class UpdateSubscriptionController extends BaseController<Request, Respon
     switch (result.error.constructor) {
       case UpdateSubscriptionWebsiteNotFound:
         return this.badRequest('Website not found');
+      case UpdateSubscriptionNotFound:
+        return this.notFound('Subscription not found');
       default:
         return this.internalServerError(result.error.message);
     }
