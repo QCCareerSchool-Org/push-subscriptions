@@ -23,7 +23,7 @@ export class DeleteSubscriptionsInteractor implements IInteractor<DeleteSubscrip
 
   public async execute(request: DeleteSubscriptionsRequest): Promise<ResultType<DeleteSubscriptionsResponse>> {
     try {
-      const website = await this.prisma.websites.findFirst({ where: { name: request.websiteName } });
+      const website = await this.prisma.website.findFirst({ where: { name: request.websiteName } });
       if (!website) {
         return Result.fail(new DeleteSubscriptionsWebsiteNotFound());
       }

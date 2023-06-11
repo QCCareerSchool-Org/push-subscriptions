@@ -19,6 +19,7 @@ type Request = {
     lastName: string | null;
     emailAddress: string | null;
     errorCode: number | null;
+    interests?: string[];
   };
 };
 
@@ -40,10 +41,11 @@ export class UpdateSubscriptionController extends BaseController<Request, Respon
       lastName: yup.string().nullable().defined(),
       emailAddress: yup.string().nullable().defined(),
       errorCode: yup.number().integer().nullable().defined(),
+      interests: yup.array().of(yup.string().required()).optional(),
     });
     try {
       const [ params, body ] = await Promise.all([
-        paramsSchema.validate(this.req.query),
+        paramsSchema.validate(this.req.params),
         bodySchema.validate(this.req.body),
       ]);
       return { params, body };
@@ -73,6 +75,7 @@ export class UpdateSubscriptionController extends BaseController<Request, Respon
       lastName: body.lastName,
       emailAddress: body.emailAddress,
       errorCode: body.errorCode,
+      interests: body.interests,
     });
 
     if (result.success) {

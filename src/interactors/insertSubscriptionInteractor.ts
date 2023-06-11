@@ -1,4 +1,4 @@
-import type { PrismaClient, Subscription } from '@prisma/client';
+import type { Interest, PrismaClient, Subscription, SubscriptionInterest } from '@prisma/client';
 
 import type { SubscriptionDTO } from '../domain/subscription';
 import type { IDateService } from '../services/date';
@@ -20,11 +20,13 @@ export type InsertSubscriptionRequest = {
   firstName: string | null;
   lastName: string | null;
   emailAddress: string | null;
+  interests?: string[];
 };
 
 export type InsertSubscriptionResponse = SubscriptionDTO;
 
-export class InsertSubscriptionWebsiteNotFound extends Error {}
+export class InsertSubscriptionError extends Error { }
+export class InsertSubscriptionWebsiteNotFound extends InsertSubscriptionError { }
 
 export class InsertSubscriptionInteractor implements IInteractor<InsertSubscriptionRequest, InsertSubscriptionResponse> {
 
@@ -37,14 +39,7 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
 
   public async execute(request: InsertSubscriptionRequest): Promise<ResultType<InsertSubscriptionResponse>> {
     try {
-      const website = await this.prisma.websites.findFirst({ where: { name: request.websiteName } });
-      if (!website) {
-        return Result.fail(new InsertSubscriptionWebsiteNotFound());
-      }
-
-      const existingSubscription = await this.prisma.subscription.findFirst({
-        where: { endpoint: request.endpoint, websiteId: website.websiteId },
-      });
+      const prismaNow = this.dateService.fixPrismaWriteDate(this.dateService.getDate());
 
       const data: Record<string, unknown> = {
         expirationTime: request.expirationTime,
@@ -62,31 +57,89 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
         data.emailAddress = request.emailAddress || null;
       }
 
-      let subscription: Subscription;
+      let subscription: Subscription & {
+        interests: Array<SubscriptionInterest & {
+          interest: Interest;
+        }>;
+      };
 
-      if (existingSubscription) {
-        subscription = await this.prisma.subscription.update({
-          data,
-          where: { subscriptionId: existingSubscription.subscriptionId },
+      try {
+        subscription = await this.prisma.$transaction(async t => {
+          const website = await t.website.findFirst({ where: { name: request.websiteName } });
+          if (!website) {
+            throw new InsertSubscriptionWebsiteNotFound();
+          }
+
+          const existingSubscription = await t.subscription.findFirst({
+            where: { endpoint: request.endpoint, websiteId: website.websiteId },
+            include: { interests: true },
+          });
+
+          let subscriptionId: Buffer;
+          let existingInterestIds: Buffer[];
+
+          if (existingSubscription) {
+            subscriptionId = existingSubscription.subscriptionId;
+            existingInterestIds = existingSubscription.interests.map(i => i.interestId);
+
+            await t.subscription.update({
+              data,
+              where: { subscriptionId: existingSubscription.subscriptionId },
+            });
+          } else {
+            const newSubscription = await t.subscription.create({
+              data: {
+                ...data,
+                subscriptionId: this.uuidService.uuidToBin(this.uuidService.createUUID()),
+                websiteId: website.websiteId,
+                endpoint: request.endpoint,
+                created: prismaNow,
+                modified: prismaNow,
+              },
+            });
+
+            subscriptionId = newSubscription.subscriptionId;
+            existingInterestIds = [];
+          }
+
+          // add any interests that aren't already present
+          if (request.interests) {
+            const interests = await t.interest.findMany({ where: { name: { in: request.interests } } });
+
+            const notFound = request.interests.filter(name => !interests.some(i => i.name === name));
+            if (notFound.length) {
+              this.logger.warn('Interests not found', notFound);
+            }
+
+            const interestIds = interests.map(i => i.interestId);
+            const missingInterestIds = interestIds.filter(i => !existingInterestIds.some(e => e.compare(i) === 0));
+
+            await t.subscriptionInterest.createMany({
+              data: missingInterestIds.map(interestId => ({
+                subscriptionId,
+                interestId,
+                created: prismaNow,
+              })),
+            });
+          }
+
+          return t.subscription.findUniqueOrThrow({
+            where: { subscriptionId },
+            include: { interests: { include: { interest: true } } },
+          });
         });
-      } else {
-        const prismaNow = this.dateService.fixPrismaWriteDate(this.dateService.getDate());
-        subscription = await this.prisma.subscription.create({
-          data: {
-            ...data,
-            subscriptionId: this.uuidService.uuidToBin(this.uuidService.createUUID()),
-            websiteId: website.websiteId,
-            endpoint: request.endpoint,
-            created: prismaNow,
-            modified: prismaNow,
-          },
-        });
+      } catch (err) {
+        if (err instanceof InsertSubscriptionError) {
+          return Result.fail(err);
+        }
+        throw err;
       }
 
       return Result.success({
         subscriptionId: this.uuidService.binToUUID(subscription.subscriptionId),
         websiteId: this.uuidService.binToUUID(subscription.websiteId),
         endpoint: subscription.endpoint,
+        expirationTime: subscription.expirationTime,
         p256dh: subscription.p256dh === null ? null : subscription.p256dh.toString('base64'),
         auth: subscription.auth === null ? null : subscription.auth.toString('base64'),
         firstName: subscription.firstName,
@@ -95,6 +148,7 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
         errorCode: subscription.errorCode,
         created: this.dateService.fixPrismaReadDate(subscription.created),
         modified: this.dateService.fixPrismaReadDate(subscription.modified),
+        interests: subscription.interests.map(i => i.interest.name),
       });
     } catch (err) {
       this.logger.error('error inserting subscription', err instanceof Error ? err.message : err);
