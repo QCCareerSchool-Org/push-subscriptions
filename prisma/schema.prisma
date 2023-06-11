@@ -17,7 +17,7 @@ model Subscription {
   firstName      String?                @map("first_name")
   lastName       String?                @map("last_name")
   emailAddress   String?                @map("email_address")
-  errorCode      Int?                   @db.SmallInt @map("error_code")
+  errorCode      Int?                   @map("error_code") @db.SmallInt
   created        DateTime               @default(now()) @db.Timestamp(6)
   modified       DateTime               @default(now()) @db.Timestamp(6)
   websites       Website                @relation(fields: [websiteId], references: [websiteId], map: "FK_subscriptions_websites")
@@ -39,7 +39,7 @@ model Website {
 model Interest {
   interestId    Bytes                  @id @map("interest_id") @db.Binary(16)
   name          String                 @unique(map: "name")
-  description   String?
+  description   String?                @db.Text
   subscriptions SubscriptionInterest[]
 
   @@map("interests")
@@ -49,9 +49,10 @@ model SubscriptionInterest {
   subscriptionId Bytes        @map("subscription_id") @db.Binary(16)
   interestId     Bytes        @map("interest_id") @db.Binary(16)
   created        DateTime     @default(now()) @db.Timestamp(6)
-  subscription   Subscription @relation(fields: [subscriptionId], references: [subscriptionId])
-  interest       Interest     @relation(fields: [interestId], references: [interestId])
+  interest       Interest     @relation(fields: [interestId], references: [interestId], map: "FK_subscriptions_interests_interests")
+  subscription   Subscription @relation(fields: [subscriptionId], references: [subscriptionId], onDelete: Cascade, map: "FK_subscriptions_interests_subscriptions")
 
+  @@id([subscriptionId, interestId], name: "subscriptionIdInterestId")
+  @@index([interestId], map: "FK_subscriptions_interests_interests")
   @@map("subscriptions_interests")
-  @@id(fields: [subscriptionId, interestId], name: "subscriptionIdInterestId")
 }
