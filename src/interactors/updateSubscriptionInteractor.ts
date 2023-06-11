@@ -68,25 +68,32 @@ export class UpdateSubscriptionInteractor implements IInteractor<UpdateSubscript
             throw new UpdateSubscriptionNotFound();
           }
 
+          // set the interests
           if (request.interests) {
-            // look up all the interests
+            // look up all the interests that we want to add
             const interests = await t.interest.findMany({
-              where: { name: { in: request.interests } },
+              where: {
+                websiteId: website.websiteId,
+                name: { in: request.interests },
+              },
             });
 
+            // see if any aren't found for this website and log a warning
             const notFound = request.interests.filter(name => !interests.some(i => i.name === name));
             if (notFound.length) {
-              this.logger.warn('Interests not found', notFound);
+              this.logger.warn('Interests not found', { websiteName: website.name, interests: notFound });
             }
 
-            // delete any exising subscriptionInterests for this subscription that aren't in the list
+            // delete any exising subscriptionInterests for this subscription that we weren't given
             await t.subscriptionInterest.deleteMany({
               where: { subscriptionId: subscriptionIdBin, interestId: { notIn: interests.map(i => i.interestId) } },
             });
 
-            // add any missing subscriptionInterests
+            // determine which ones aren't already present
             const existingInterestIds = subscription.interests.map(i => i.interestId);
             const missingInterestIds = interests.map(i => i.interestId).filter(i => !existingInterestIds.some(e => e.compare(i) === 0));
+
+            // add the missing subscriptionInterests
             await t.subscriptionInterest.createMany({
               data: missingInterestIds.map(interestId => ({
                 subscriptionId: subscriptionIdBin,

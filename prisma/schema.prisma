@@ -31,6 +31,7 @@ model Website {
   websiteId     Bytes          @id @map("website_id") @db.Binary(16)
   name          String         @unique(map: "name")
   created       DateTime       @default(now()) @db.Timestamp(6)
+  interests     Interest[]
   subscriptions Subscription[]
 
   @@map("websites")
@@ -38,10 +39,13 @@ model Website {
 
 model Interest {
   interestId    Bytes                  @id @map("interest_id") @db.Binary(16)
-  name          String                 @unique(map: "name")
+  websiteId     Bytes                  @db.Binary(16) @map("website_id")
+  name          String
   description   String?                @db.Text
+  websites      Website                @relation(fields: [websiteId], references: [websiteId], onDelete: Cascade, map: "FK_interests_websites")
   subscriptions SubscriptionInterest[]
 
+  @@unique([websiteId, name], map: "website_id_name")
   @@map("interests")
 }
 
