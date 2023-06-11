@@ -30,7 +30,7 @@ export class UpdateSubscriptionsInteractor implements IInteractor<UpdateSubscrip
 
   public async execute(request: UpdateSubscriptionsRequest): Promise<ResultType<UpdateSubscriptionsResponse>> {
     try {
-      const website = await this.prisma.websites.findFirst({ where: { name: request.websiteName } });
+      const website = await this.prisma.website.findFirst({ where: { name: request.websiteName } });
       if (!website) {
         return Result.fail(new UpdateSubscriptionsWebsiteNotFound());
       }

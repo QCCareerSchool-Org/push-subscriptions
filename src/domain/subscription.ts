@@ -4,6 +4,7 @@ export type SubscriptionDTO = {
   /** uuid */
   websiteId: string;
   endpoint: string;
+  expirationTime: number | null;
   p256dh: string | null;
   auth: string | null;
   firstName: string | null;
@@ -12,4 +13,5 @@ export type SubscriptionDTO = {
   errorCode: number | null;
   created: Date;
   modified: Date;
+  interests: string[];
 };

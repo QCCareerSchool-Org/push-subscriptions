@@ -15,6 +15,7 @@ type Request = {
     firstName: string | null;
     lastName: string | null;
     emailAddress: string | null;
+    interests?: string[];
   };
 };
 
@@ -32,6 +33,7 @@ export class InsertSubscriptionController extends BaseController<Request, Respon
       firstName: yup.string().nullable().defined(),
       lastName: yup.string().nullable().defined(),
       emailAddress: yup.string().nullable().defined(),
+      interests: yup.array().of(yup.string().required()).optional(),
     });
     try {
       const body = await bodySchema.validate(this.req.body);
@@ -60,6 +62,7 @@ export class InsertSubscriptionController extends BaseController<Request, Respon
       firstName: body.firstName,
       lastName: body.lastName,
       emailAddress: body.emailAddress,
+      interests: body.interests,
     });
 
     if (result.success) {
