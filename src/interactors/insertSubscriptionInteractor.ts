@@ -17,10 +17,12 @@ export type InsertSubscriptionRequest = {
   p256dh: string | null;
   /** DOMHighResTimeStamp */
   expirationTime: number | null;
-  firstName?: string;
-  lastName?: string;
-  emailAddress?: string;
-  interests?: string[];
+  meta?: {
+    firstName: string | null;
+    lastName: string | null;
+    emailAddress: string | null;
+    interests?: string[];
+  };
 };
 
 export type InsertSubscriptionResponse = SubscriptionDTO;
@@ -47,14 +49,16 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
         p256dh: request.p256dh === null ? null : Buffer.from(request.p256dh, 'base64'),
       };
 
-      if (request.firstName) {
-        data.firstName = request.firstName;
-      }
-      if (request.lastName) {
-        data.lastName = request.lastName;
-      }
-      if (request.emailAddress) {
-        data.emailAddress = request.emailAddress;
+      if (request.meta) {
+        if (request.meta.firstName) {
+          data.firstName = request.meta.firstName;
+        }
+        if (request.meta.lastName) {
+          data.lastName = request.meta.lastName;
+        }
+        if (request.meta.emailAddress) {
+          data.emailAddress = request.meta.emailAddress;
+        }
       }
 
       let subscription: Subscription & {
@@ -103,17 +107,17 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
           }
 
           // add any interests that aren't already present
-          if (request.interests) {
+          if (request.meta?.interests) {
             // look up all the interests that we want to add
             const interests = await t.interest.findMany({
               where: {
                 websiteId: website.websiteId,
-                name: { in: request.interests },
+                name: { in: request.meta?.interests },
               },
             });
 
             // see if any aren't found for this website and log a warning
-            const notFound = request.interests.filter(name => !interests.some(i => i.name === name));
+            const notFound = request.meta?.interests.filter(name => !interests.some(i => i.name === name));
             if (notFound.length) {
               this.logger.warn('Interests not found', { websiteName: website.name, interests: notFound });
             }
