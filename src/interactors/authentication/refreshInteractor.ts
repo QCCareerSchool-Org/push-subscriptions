@@ -1,19 +1,21 @@
 import type { PrismaClient } from '@prisma/client';
 
-import type { AccessTokenPayload } from '../../domain/accessTokenPayload.js';
-import type { AccountType } from '../../domain/accountType.js';
-import { isValidStudentType } from '../../domain/studentType.js';
-import type { IInteractor } from '../../interactors/index.js';
-import type { ResultType } from '../../interactors/result.js';
-import { Result } from '../../interactors/result.js';
-import type { IConfigService } from '../../services/config/index.js';
-import type { ICryptoService } from '../../services/crypto/index.js';
-import type { IDateService } from '../../services/date/index.js';
-import type { IJWTService } from '../../services/jwt/index.js';
-import type { ILoggerService } from '../../services/logger/index.js';
+import type { AccessTokenPayload } from '../../domain/accessTokenPayload';
+import type { IInteractor } from '../../interactors';
+import type { ResultType } from '../../interactors/result';
+import { Result } from '../../interactors/result';
+import type { IConfigService } from '../../services/config';
+import type { ICryptoService } from '../../services/crypto';
+import type { IDateService } from '../../services/date';
+import type { IJWTService } from '../../services/jwt';
+import type { ILoggerService } from '../../services/logger';
+import type { IUUIDService } from '../../services/uuid';
 
 export type RefreshRequestDTO = {
-  token: Buffer;
+  /** uuid */
+  id: string;
+  /** base64 */
+  token: string;
 };
 
 type CookieOptions = {
@@ -38,14 +40,13 @@ export type RefreshResponseDTO = {
 
 export class RefreshTokenNotFound extends Error {}
 export class RefreshTokenExpired extends Error {}
-export class RefreshTokenInvalidType extends Error {}
-export class RefreshAccountNotFound extends Error {}
-export class RefreshStudentInvalidType extends Error {}
+export class RefreshUserExpired extends Error {}
 
 export class RefreshInteractor implements IInteractor<RefreshRequestDTO, RefreshResponseDTO> {
 
   public constructor(
     private readonly prisma: PrismaClient,
+    private readonly uuidService: IUUIDService,
     private readonly configService: IConfigService,
     private readonly dateService: IDateService,
     private readonly jwtService: IJWTService,
@@ -53,37 +54,31 @@ export class RefreshInteractor implements IInteractor<RefreshRequestDTO, Refresh
     private readonly logger: ILoggerService,
   ) { /* empty */ }
 
-  public async execute({ token }: RefreshRequestDTO): Promise<ResultType<RefreshResponseDTO>> {
+  public async execute({ id, token }: RefreshRequestDTO): Promise<ResultType<RefreshResponseDTO>> {
     try {
       // look up the refresh token
+      const idBin = this.uuidService.uuidToBin(id);
+      const tokenBin = Buffer.from(token, 'base64');
       const refreshToken = await this.prisma.refreshToken.findUnique({
-        where: { token },
-        include: { student: true, administrator: true },
+        where: { refreshTokenId: idBin, token: tokenBin },
+        include: { user: true },
       });
-      if (refreshToken === null) {
+      if (!refreshToken) {
         return Result.fail(new RefreshTokenNotFound());
       }
 
       // make sure it's not expired
-      const properExpiry = this.dateService.fixPrismaReadDate(refreshToken.expiry);
-      if (properExpiry < this.dateService.getDate()) {
+      const tokenExpiry = this.dateService.fixPrismaReadDate(refreshToken.expiry);
+      if (tokenExpiry < this.dateService.getDate()) {
         return Result.fail(new RefreshTokenExpired());
       }
 
-      // determine which account we're dealing with
-      let accountId: number;
-      let accountType: AccountType;
-      if (refreshToken.administratorId !== null) {
-        accountId = refreshToken.administratorId;
-        accountType = 'admin';
-      } else if (refreshToken.tutorId !== null) {
-        accountId = refreshToken.tutorId;
-        accountType = 'tutor';
-      } else if (refreshToken.studentId !== null) {
-        accountId = refreshToken.studentId;
-        accountType = 'student';
-      } else {
-        return Result.fail(new RefreshStudentInvalidType());
+      // make sure user account is not expired
+      if (refreshToken.user.expiry) {
+        const userExpiry = this.dateService.fixPrismaReadDate(refreshToken.user.expiry);
+        if (userExpiry <= this.dateService.getDate()) {
+          return Result.fail(new RefreshUserExpired());
+        }
       }
 
       // determine when the new access token should expire
@@ -95,45 +90,14 @@ export class RefreshInteractor implements IInteractor<RefreshRequestDTO, Refresh
 
       // create a new jwt access token
       const accessTokenPayload: AccessTokenPayload = {
-        studentCenter: {
-          id: accountId,
-          type: accountType,
-        },
+        id: refreshToken.userId,
         exp: accessExp,
         xsrf: xsrfTokenString, // store the XSRF token in the payload
+        privileges: {
+          deleteEnrollment: refreshToken.user.deleteEnrollmentPriv,
+          void: refreshToken.user.voidPriv,
+        },
       };
-      if (accountType === 'admin') {
-        if (!refreshToken.administrator) {
-          return Result.fail(new RefreshAccountNotFound());
-        }
-        accessTokenPayload.studentCenter.privileges = {
-          submissionPriceChange: refreshToken.administrator.submissionPricePriv,
-          courseDevelopment: refreshToken.administrator.courseDevelopmentPriv,
-          delete: refreshToken.administrator.deletePriv,
-        };
-        if (refreshToken.administrator.apiUsername !== null) {
-          accessTokenPayload.crm = {
-            id: refreshToken.administrator.apiUsername,
-            type: 'admin',
-          };
-        }
-      }
-      if (accountType === 'student') { // add student-only data to payload
-        if (!refreshToken.student) {
-          return Result.fail(new RefreshAccountNotFound());
-        }
-        if (isValidStudentType(refreshToken.student.studentTypeId)) {
-          accessTokenPayload.studentCenter.studentType = refreshToken.student.studentTypeId;
-          if (refreshToken.student.apiUsername !== null) {
-            accessTokenPayload.crm = {
-              id: refreshToken.student.apiUsername,
-              type: 'student',
-            };
-          }
-        } else {
-          return Result.fail(new RefreshStudentInvalidType());
-        }
-      }
       const accessToken = await this.jwtService.sign(accessTokenPayload);
 
       const baseCookieOptions = {
@@ -156,7 +120,6 @@ export class RefreshInteractor implements IInteractor<RefreshRequestDTO, Refresh
           { name: 'XSRF-TOKEN', value: xsrfTokenString, options: { ...accessCookieOptions, path: '/', httpOnly: false } }, // path '/' and httpOnly false for Angular CSRF
         ],
       });
-
     } catch (err) {
       this.logger.error('error refreshing user', err instanceof Error ? err.message : err);
       return Result.fail(err instanceof Error ? err : Error('unknown error'));

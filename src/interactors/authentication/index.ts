@@ -1,12 +1,12 @@
-import { prisma } from '../../frameworks/prisma/index.js';
-import { dateService, environmentConfigService, ipaddrJSIPAddressService, jwtService, nodeCryptoService, studentService, uuidService, winstonLoggerService } from '../../services/index.js';
-import { CheckAuthenticationInteractor } from './checkAuthenticationInteractor.js';
-import { LoginInteractor } from './loginInteractor.js';
-import { LogoutInteractor } from './logoutInteractor.js';
-import { RefreshInteractor } from './refreshInteractor.js';
+import { prisma } from '../../frameworks/prisma';
+import { dateService, environmentConfigService, ipaddrJSIPAddressService, jwtService, nodeCryptoService, uuidService, winstonLoggerService } from '../../services';
+import { CheckAuthenticationInteractor } from './checkAuthenticationInteractor';
+import { LoginInteractor } from './loginInteractor';
+import { LogoutInteractor } from './logoutInteractor';
+import { RefreshInteractor } from './refreshInteractor';
 
 // use-case interactor singletons
 export const checkAuthenticationInteractor = new CheckAuthenticationInteractor(jwtService, winstonLoggerService);
-export const loginInteractor = new LoginInteractor(prisma, environmentConfigService, dateService, jwtService, nodeCryptoService, uuidService, ipaddrJSIPAddressService, studentService, winstonLoggerService);
-export const logoutInteractor = new LogoutInteractor(prisma, winstonLoggerService);
-export const refreshInteractor = new RefreshInteractor(prisma, environmentConfigService, dateService, jwtService, nodeCryptoService, winstonLoggerService);
+export const loginInteractor = new LoginInteractor(prisma, environmentConfigService, dateService, jwtService, nodeCryptoService, uuidService, ipaddrJSIPAddressService, winstonLoggerService);
+export const logoutInteractor = new LogoutInteractor(prisma, uuidService, winstonLoggerService);
+export const refreshInteractor = new RefreshInteractor(prisma, uuidService, environmentConfigService, dateService, jwtService, nodeCryptoService, winstonLoggerService);

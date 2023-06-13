@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { environmentConfigService } from '../../services';
 
 const log: Prisma.LogLevel[] = environmentConfigService.config.environment === 'development'
-  ? [ 'warn', 'error' ]
+  ? [ 'query', 'warn', 'error' ]
   : [];
 
 export const prisma = new PrismaClient({ log });

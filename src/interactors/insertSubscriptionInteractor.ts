@@ -17,9 +17,9 @@ export type InsertSubscriptionRequest = {
   p256dh: string | null;
   /** DOMHighResTimeStamp */
   expirationTime: number | null;
-  firstName: string | null;
-  lastName: string | null;
-  emailAddress: string | null;
+  firstName?: string;
+  lastName?: string;
+  emailAddress?: string;
   interests?: string[];
 };
 
@@ -47,14 +47,14 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
         p256dh: request.p256dh === null ? null : Buffer.from(request.p256dh, 'base64'),
       };
 
-      if (request.firstName !== null) {
-        data.firstName = request.firstName || null;
+      if (request.firstName) {
+        data.firstName = request.firstName;
       }
-      if (request.lastName !== null) {
-        data.lastName = request.lastName || null;
+      if (request.lastName) {
+        data.lastName = request.lastName;
       }
-      if (request.emailAddress !== null) {
-        data.emailAddress = request.emailAddress || null;
+      if (request.emailAddress) {
+        data.emailAddress = request.emailAddress;
       }
 
       let subscription: Subscription & {
@@ -115,7 +115,7 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
             // see if any aren't found for this website and log a warning
             const notFound = request.interests.filter(name => !interests.some(i => i.name === name));
             if (notFound.length) {
-              this.logger.error('Interests not found', { websiteName: website.name, interests: notFound });
+              this.logger.warn('Interests not found', { websiteName: website.name, interests: notFound });
             }
 
             // determine which ones aren't already present

@@ -4,7 +4,7 @@ import * as yup from 'yup';
 
 import type { AccessTokenPayload } from '../../domain/accessTokenPayload';
 import { loginInteractor } from '../../interactors/authentication';
-import { LoginArears, LoginExpired, LoginNoPasswordHash, LoginNotFound, LoginWrongPassword } from '../../interactors/authentication/loginInteractor';
+import { LoginArears, LoginExpired, LoginNoPasswordHash, LoginUserNotFound, LoginWrongPassword } from '../../interactors/authentication/loginInteractor';
 import { BaseController } from '../baseController';
 
 type Request = {
@@ -39,6 +39,10 @@ export class LoginController extends BaseController<Request, Response> {
   }
 
   protected async executeImpl({ body }: Request): Promise<void> {
+    if (!this.isPostMethod()) {
+      return this.methodNotAllowed();
+    }
+
     const { username, password, stayLoggedIn } = body;
 
     // read browser data from request (created by middleware)
@@ -89,7 +93,7 @@ export class LoginController extends BaseController<Request, Response> {
       case LoginNoPasswordHash:
         return this.internalServerError('Password is stored in legacy format');
       case LoginWrongPassword:
-      case LoginNotFound:
+      case LoginUserNotFound:
         // send this response for either error--we don't want an attacker to know whether
         // a username exists or not
         return this.badRequest('Invalid username or password');

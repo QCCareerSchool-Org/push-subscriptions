@@ -10,6 +10,7 @@ import { environmentConfigService, winstonLoggerService } from '../../services';
 import { asyncWrapper } from './asyncWrapper';
 import { authenticationRouter } from './authenticationRouter';
 import { globalErrorHandler } from './globalErrorHandler';
+import { protectedRouter } from './protectedRouter';
 import { router } from './router';
 
 const { port, environment } = environmentConfigService.config;
@@ -44,6 +45,8 @@ app.use(asyncWrapper(async (req, res, next) => {
   const middleware = new CheckAuthenticationMiddleware(req, res, next);
   await middleware.execute();
 }));
+
+app.use('/', protectedRouter);
 
 // all other routes return 404
 app.use(asyncWrapper(async (req, res) => {

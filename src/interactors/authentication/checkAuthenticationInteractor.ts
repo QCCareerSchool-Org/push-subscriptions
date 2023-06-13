@@ -1,13 +1,11 @@
 import * as yup from 'yup';
 
-import type { AccessTokenPayload } from '../../domain/accessTokenPayload.js';
-import type { AccountType } from '../../domain/accountType.js';
-import type { StudentTypeType } from '../../domain/studentType.js';
-import type { IJWTService } from '../../services/jwt/index.js';
-import type { ILoggerService } from '../../services/logger/index.js';
-import type { IInteractor } from '../index.js';
-import type { ResultType } from '../result.js';
-import { Result } from '../result.js';
+import type { IInteractor } from '..';
+import type { AccessTokenPayload } from '../../domain/accessTokenPayload';
+import type { IJWTService } from '../../services/jwt';
+import type { ILoggerService } from '../../services/logger';
+import type { ResultType } from '../result';
+import { Result } from '../result';
 
 type CheckAuthenticationRequestDTO = {
   accessToken: string;
@@ -38,22 +36,14 @@ export class CheckAuthenticationInteractor implements IInteractor<CheckAuthentic
         return Result.fail(new CheckAuthenticationVerifyError());
       }
 
-      const schema = yup.object({ // const schema: yup.SchemaOf<AccessTokenPayload> = yup.object({
-        studentCenter: yup.object({
-          id: yup.number().defined(),
-          type: yup.mixed().oneOf<AccountType>([ 'admin', 'tutor', 'student' ]).defined(),
-          studentType: yup.mixed().oneOf<StudentTypeType>([ 'general', 'event', 'design', 'writing' ]),
-          privileges: yup.object({
-            unitPrice: yup.boolean(),
-            courseDevelopment: yup.boolean(),
-          }),
-        }).defined(),
-        crm: yup.object({
-          id: yup.number().defined(),
-          type: yup.mixed().oneOf<'student' | 'admin'>([ 'admin', 'student' ]).defined(),
-        }).default(undefined),
+      const schema = yup.object({ // const schema: yup.Schema<AccessTokenPayload> = yup.object({
+        id: yup.number().defined(),
         exp: yup.number().defined(),
         xsrf: yup.string().defined(),
+        privileges: yup.object({
+          deleteEnrollment: yup.boolean().defined(),
+          void: yup.boolean().defined(),
+        }).defined(),
       });
 
       let accessTokenPayload: AccessTokenPayload;

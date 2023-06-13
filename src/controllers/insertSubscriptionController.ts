@@ -12,9 +12,9 @@ type Request = {
     expirationTime: number | null;
     p256dh: string | null;
     auth: string | null;
-    firstName: string | null;
-    lastName: string | null;
-    emailAddress: string | null;
+    firstName?: string;
+    lastName?: string;
+    emailAddress?: string;
     interests?: string[];
   };
 };
@@ -30,9 +30,9 @@ export class InsertSubscriptionController extends BaseController<Request, Respon
       expirationTime: yup.number().nullable().defined(),
       p256dh: yup.string().nullable().defined(),
       auth: yup.string().nullable().defined(),
-      firstName: yup.string().nullable().defined(),
-      lastName: yup.string().nullable().defined(),
-      emailAddress: yup.string().nullable().defined(),
+      firstName: yup.string().optional(),
+      lastName: yup.string().optional(),
+      emailAddress: yup.string().optional(),
       interests: yup.array().of(yup.string().required()).optional(),
     });
     try {

@@ -7,7 +7,7 @@ import { BaseController } from '../baseController';
 
 type Request = {
   cookies: {
-    refreshId?: string;
+    refreshTokenId?: string;
     refreshToken?: string;
   };
 };
@@ -16,7 +16,7 @@ export class LogoutController extends BaseController<Request, void> {
 
   protected async validate(): Promise<Request | false> {
     const cookiesSchema: yup.Schema<Request['cookies']> = yup.object({
-      refreshId: yup.string(),
+      refreshTokenId: yup.string(),
       refreshToken: yup.string(),
     });
     try {
@@ -33,18 +33,11 @@ export class LogoutController extends BaseController<Request, void> {
   }
 
   protected async executeImpl({ cookies }: Request): Promise<void> {
-    let id: bigint | undefined = undefined;
-    if (typeof cookies.refreshId !== 'undefined') {
-      try {
-        id = BigInt(cookies.refreshId);
-      } catch (err) {
-        return this.badRequest('Invalid refresh id');
-      }
+    if (!this.isPostMethod()) {
+      return this.methodNotAllowed();
     }
 
-    const token = typeof cookies.refreshToken === 'undefined' ? undefined : Buffer.from(cookies.refreshToken, 'base64');
-
-    const result = await logoutInteractor.execute({ id, token });
+    const result = await logoutInteractor.execute({ id: cookies.refreshTokenId, token: cookies.refreshToken });
 
     this.clearCookies();
 

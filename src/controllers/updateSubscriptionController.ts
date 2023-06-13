@@ -29,7 +29,7 @@ export class UpdateSubscriptionController extends BaseController<Request, Respon
 
   protected async validate(): Promise<false | Request> {
     const paramsSchema: yup.Schema<Request['params']> = yup.object({
-      subscriptionId: yup.string().defined(),
+      subscriptionId: yup.string().matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu).defined(), // uuid
     });
     const bodySchema: yup.Schema<Request['body']> = yup.object({
       websiteName: yup.string().defined(),

@@ -1,12 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
-  schemas  = ["push", "general"]
+  schemas  = ["general", "push"]
 }
 
 model Subscription {
@@ -27,7 +27,6 @@ model Subscription {
 
   @@index([websiteId], map: "FK_subscriptions_websites")
   @@map("subscriptions")
-  @@schema("push")
 }
 
 model Website {
@@ -38,12 +37,11 @@ model Website {
   subscriptions Subscription[]
 
   @@map("websites")
-  @@schema("push")
 }
 
 model Interest {
   interestId    Bytes                  @id @map("interest_id") @db.Binary(16)
-  websiteId     Bytes                  @db.Binary(16) @map("website_id")
+  websiteId     Bytes                  @map("website_id") @db.Binary(16)
   name          String
   description   String?                @db.Text
   websites      Website                @relation(fields: [websiteId], references: [websiteId], onDelete: Cascade, map: "FK_interests_websites")
@@ -51,7 +49,6 @@ model Interest {
 
   @@unique([websiteId, name], map: "website_id_name")
   @@map("interests")
-  @@schema("push")
 }
 
 model SubscriptionInterest {
@@ -64,23 +61,23 @@ model SubscriptionInterest {
   @@id([subscriptionId, interestId], name: "subscriptionIdInterestId")
   @@index([interestId], map: "FK_subscriptions_interests_interests")
   @@map("subscriptions_interests")
-  @@schema("push")
 }
 
 model User {
-  userId               Int       @id @map("id")
-  username             String    @db.VarChar(50)
-  passwordHash         String?   @db.VarChar(255) @map("pw_hash")
-  salt                 String?   @db.Char(32)
-  password             String?   @db.Char(64)
-  expiry               DateTime? @db.Timestamp()
+  userId               Int            @id @map("id")
+  username             String         @db.VarChar(50) @unique
+  passwordHash         String?        @db.VarChar(255) @map("pw_hash")
+  salt                 String?        @db.Char(32)
+  password             String?        @db.Char(64)
+  expiry               DateTime?      @db.Timestamp()
   sex                  UserSex
-  firstName            String    @db.VarChar(50) @map("first_name")
-  lastName             String    @db.VarChar(50) @map("last_name")
-  emailAddress         String    @db.VarChar(255) @map("email_address")
-  deleteEnrollmentPriv Boolean   @map("delete_enrollment_priv") @default(false)
-  voidPriv             Boolean   @map("void_priv") @default(false)
-  lastLogin            DateTime? @db.Timestamp @map("last_login")
+  firstName            String         @db.VarChar(50) @map("first_name")
+  lastName             String         @db.VarChar(50) @map("last_name")
+  emailAddress         String         @db.VarChar(255) @map("email_address")
+  deleteEnrollmentPriv Boolean        @map("delete_enrollment_priv") @default(false)
+  voidPriv             Boolean        @map("void_priv") @default(false)
+  lastLogin            DateTime?      @db.Timestamp @map("last_login")
+  refreshTokens        RefreshToken[]
   
   @@map("users")
   @@schema("general")
@@ -89,4 +86,27 @@ model User {
 enum UserSex {
   M
   F
+}
+
+model RefreshToken {
+  refreshTokenId  Bytes          @id @map("refresh_token_id") @db.Binary(16)
+  userId          Int            @map("user_id")
+  token           Bytes          @unique(map: "token") @db.Binary(64)
+  expiry          DateTime       @db.Timestamp(0)
+  ipAddress       Bytes?         @map("ip_address") @db.VarBinary(16)
+  browser         String?
+  browserVersion  String?        @map("browser_version")
+  mobile          Boolean?
+  os              String?
+  city            String?
+  country         String?        @db.Char(2)
+  latitude        Decimal?       @db.Decimal(7, 4)
+  longitude       Decimal?       @db.Decimal(7, 4)
+  created         DateTime       @default(now()) @db.Timestamp(0)
+  modified        DateTime       @default(now()) @db.Timestamp(0)
+  user            User           @relation(fields: [userId], references: [userId], onDelete: Cascade, map: "FK_refresh_tokens_users")
+
+  @@index([userId], map: "user_id")
+  @@map("refresh_tokens")
+  @@schema("general")
 }

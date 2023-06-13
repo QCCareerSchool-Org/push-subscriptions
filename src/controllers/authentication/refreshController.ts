@@ -2,11 +2,12 @@ import * as yup from 'yup';
 
 import type { AccessTokenPayload } from '../../domain/accessTokenPayload';
 import { refreshInteractor } from '../../interactors/authentication';
-import { RefreshAccountNotFound, RefreshStudentInvalidType, RefreshTokenExpired, RefreshTokenInvalidType, RefreshTokenNotFound } from '../../interactors/authentication/refreshInteractor';
+import { RefreshTokenExpired, RefreshTokenNotFound, RefreshUserExpired } from '../../interactors/authentication/refreshInteractor';
 import { BaseController } from '../baseController';
 
 type Request = {
   cookies: {
+    refreshTokenId: string;
     refreshToken: string;
   };
 };
@@ -17,6 +18,7 @@ export class RefreshController extends BaseController<Request, Response> {
 
   protected async validate(): Promise<Request | false> {
     const cookiesSchema: yup.Schema<Request['cookies']> = yup.object({
+      refreshTokenId: yup.string().matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu).defined(), // uuid
       refreshToken: yup.string().defined().matches(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u), // base64
     });
     try {
@@ -33,9 +35,11 @@ export class RefreshController extends BaseController<Request, Response> {
   }
 
   protected async executeImpl({ cookies }: Request): Promise<void> {
-    const token = Buffer.from(cookies.refreshToken, 'base64');
+    if (!this.isPostMethod()) {
+      return this.methodNotAllowed();
+    }
 
-    const result = await refreshInteractor.execute({ token });
+    const result = await refreshInteractor.execute({ id: cookies.refreshTokenId, token: cookies.refreshToken });
 
     if (result.success) {
       const { accessTokenPayload, cookies: setCookies } = result.value;
@@ -53,12 +57,8 @@ export class RefreshController extends BaseController<Request, Response> {
       case RefreshTokenNotFound:
       case RefreshTokenExpired:
         return this.badRequest('Refresh token not found');
-      case RefreshTokenInvalidType:
-        return this.badRequest('Invalid refresh token type');
-      case RefreshAccountNotFound:
-        return this.internalServerError('Unable to find associated account');
-      case RefreshStudentInvalidType:
-        return this.internalServerError('Invalid student type found');
+      case RefreshUserExpired:
+        return this.badRequest('Account is expired');
       default:
         return this.internalServerError(result.error.message);
     }
