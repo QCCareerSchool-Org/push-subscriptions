@@ -60,6 +60,8 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
             created: prismaNow,
           } as const;
 
+          await new Promise(res => setTimeout(res, 10_000));
+
           return t.send.createMany({
             data: subscriptions.map(s => ({
               ...baseData,
