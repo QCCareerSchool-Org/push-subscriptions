@@ -1,9 +1,9 @@
 import * as yup from 'yup';
 
-import { updateSubscriptionInteractor } from '../interactors';
-import type { UpdateSubscriptionResponse } from '../interactors/updateSubscriptionInteractor';
-import { UpdateSubscriptionNotFound, UpdateSubscriptionWebsiteNotFound } from '../interactors/updateSubscriptionInteractor';
-import { BaseController } from './baseController';
+import { updateSubscriptionInteractor } from '../../interactors';
+import type { UpdateSubscriptionResponse } from '../../interactors/administrators/updateSubscriptionInteractor';
+import { UpdateSubscriptionNotFound, UpdateSubscriptionWebsiteNotFound } from '../../interactors/administrators/updateSubscriptionInteractor';
+import { BaseController } from '../baseController';
 
 type Request = {
   params: {

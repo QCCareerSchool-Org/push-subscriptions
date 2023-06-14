@@ -49,6 +49,7 @@ model Subscription {
   sends          Send[]
 
   @@index([websiteId], map: "website_id")
+  @@index([subscriptionId, websiteId], map: "subscription_idwebsite_id") // used by FK not included in prisma
   @@map("subscriptions")
 }
 
@@ -57,54 +58,76 @@ model Interest {
   websiteId     Bytes                  @map("website_id") @db.Binary(16)
   name          String
   description   String?                @db.Text
-  website       Website                @relation(fields: [websiteId], references: [websiteId], onDelete: Cascade, map: "FK_interests_websites")
+  website       Website                @relation(fields: [websiteId], references: [websiteId], map: "FK_interests_websites")
   subscriptions SubscriptionInterest[]
+  campaigns     CampaignInterest[]
 
   @@unique([websiteId, name], map: "website_id_name")
+  @@index([interestId, websiteId], map: "interest_id_website_id") // used by FK not included in prisma
   @@map("interests")
 }
 
 model SubscriptionInterest {
   subscriptionId Bytes        @map("subscription_id") @db.Binary(16)
   interestId     Bytes        @map("interest_id") @db.Binary(16)
+  websiteId      Bytes        @map("website_id") @db.Binary(16)
   created        DateTime     @default(now()) @db.Timestamp(6)
   interest       Interest     @relation(fields: [interestId], references: [interestId], map: "FK_subscriptions_interests_interests")
-  subscription   Subscription @relation(fields: [subscriptionId], references: [subscriptionId], onDelete: Cascade, map: "FK_subscriptions_interests_subscriptions")
+  subscription   Subscription @relation(fields: [subscriptionId], references: [subscriptionId], map: "FK_subscriptions_interests_subscriptions")
 
-  @@id([subscriptionId, interestId], name: "subscriptionIdInterestId")
-  @@index([interestId], map: "interest_id")
+  @@id([subscriptionId, interestId], name: "subscriptionInterest")
+  @@index([interestId, websiteId], map: "interest_id_website_id") // used by FK not included in prisma
+  @@index([subscriptionId, websiteId], map: "subscription_id_website_id") // used by FK not included in prisma
   @@map("subscriptions_interests")
 }
 
 model Campaign {
-  campaignId    Bytes          @id @map("campaign_id") @db.Binary(16)
-  websiteId     Bytes          @map("website_id") @db.Binary(16)
-  name          String         @db.VarChar(255)
-  heading       String         @db.VarChar(191)
-  content       String         @db.Text
-  url           String?        @db.VarChar(1024)
-  finalized     DateTime?      @db.Timestamp(6)
-  sent          DateTime?      @db.Timestamp(6)
-  finished      DateTime?      @db.Timestamp(6)
-  created       DateTime       @default(now()) @db.Timestamp(6)
-  modified      DateTime       @default(now()) @db.Timestamp(6)
-  website       Website        @relation(fields: [websiteId], references: [websiteId], map: "FK_campaigns_websites")
+  campaignId    Bytes              @id @map("campaign_id") @db.Binary(16)
+  websiteId     Bytes              @map("website_id") @db.Binary(16)
+  name          String             @db.VarChar(255)
+  heading       String             @db.VarChar(191)
+  content       String             @db.Text
+  url           String?            @db.VarChar(1024)
+  finalized     DateTime?          @db.Timestamp(6)
+  sent          DateTime?          @db.Timestamp(6)
+  finished      DateTime?          @db.Timestamp(6)
+  created       DateTime           @default(now()) @db.Timestamp(6)
+  modified      DateTime           @default(now()) @db.Timestamp(6)
+  website       Website            @relation(fields: [websiteId], references: [websiteId], map: "FK_campaigns_websites")
   sends         Send[]
+  interests     CampaignInterest[]
 
   @@index([websiteId], map: "website_id")
   @@map("campaigns")
 }
 
+model CampaignInterest {
+  campaignId Bytes    @map("campaign_id") @db.Binary(16)
+  interestId Bytes    @map("interest_id") @db.Binary(16)
+  websiteId  Bytes    @map("website_id") @db.Binary(16)
+  campaign   Campaign @relation(fields: [campaignId], references: [campaignId], map: "FK_campaigns_interests_campaigns")
+  interest   Interest @relation(fields: [interestId], references: [interestId], map: "FK_campaigns_interests_interests")
+
+  @@id([campaignId, interestId], name: "campaignInterest")
+  @@index([campaignId, websiteId], map: "campaign_id_website_id") // used by FK not included in prisma
+  @@index([interestId, websiteId], map: "interest_id_website_id") // used by FK not included in prisma
+  @@map("campaigns_interests")
+}
+
 model Send {
   campaignId     Bytes        @map("campaign_id") @db.Binary(16)
   subscriptionId Bytes        @map("subscription_id") @db.Binary(16)
+  websiteId      Bytes        @map("website_id") @db.Binary(16)
+  sent           DateTime?    @db.Timestamp(6)
+  clicked        DateTime?    @db.Timestamp(6)
+  responseCode   Int?         @map("response_code") @db.SmallInt
   created        DateTime     @default(now()) @db.Timestamp(6)
-  modified       DateTime     @default(now()) @db.Timestamp(6)
   campaign       Campaign     @relation(fields: [campaignId], references: [campaignId], map: "FK_sends_campaigns")
   subscription   Subscription @relation(fields: [subscriptionId], references: [subscriptionId], map: "FK_sends_subscriptions")
 
-  @@id([campaignId, subscriptionId], name: "campaignWebsite")
-  @@index([subscriptionId], map: "subscription_id")
+  @@id([campaignId, subscriptionId], name: "campaignSubscription")
+  @@index([subscriptionId, websiteId], map: "subscription_id_website_id") // used by FK not included in prisma
+  @@index([campaignId, websiteId], map: "campaign_id_website_id") // used by FK not included in prisma
   @@map("sends")
 }
 

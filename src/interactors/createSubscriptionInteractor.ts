@@ -9,7 +9,7 @@ import type { ResultType } from './result';
 import { Result } from './result';
 import type { IInteractor } from '.';
 
-export type InsertSubscriptionRequest = {
+export type CreateSubscriptionRequest = {
   websiteName: string;
   endpoint: string;
   /** base64 */
@@ -36,12 +36,12 @@ export type InsertSubscriptionRequest = {
   longitude: number | null;
 };
 
-export type InsertSubscriptionResponse = SubscriptionDTO;
+export type CreateSubscriptionResponse = SubscriptionDTO;
 
-export class InsertSubscriptionError extends Error { }
-export class InsertSubscriptionWebsiteNotFound extends InsertSubscriptionError { }
+export class CreateSubscriptionError extends Error { }
+export class CreateSubscriptionWebsiteNotFound extends CreateSubscriptionError { }
 
-export class InsertSubscriptionInteractor implements IInteractor<InsertSubscriptionRequest, InsertSubscriptionResponse> {
+export class CreateSubscriptionInteractor implements IInteractor<CreateSubscriptionRequest, CreateSubscriptionResponse> {
 
   public constructor(
     private readonly prisma: PrismaClient,
@@ -51,7 +51,7 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
     private readonly logger: ILoggerService,
   ) { /* empty */ }
 
-  public async execute(request: InsertSubscriptionRequest): Promise<ResultType<InsertSubscriptionResponse>> {
+  public async execute(request: CreateSubscriptionRequest): Promise<ResultType<CreateSubscriptionResponse>> {
     try {
       const prismaNow = this.dateService.fixPrismaWriteDate(this.dateService.getDate());
 
@@ -114,7 +114,7 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
         subscription = await this.prisma.$transaction(async t => {
           const website = await t.website.findUnique({ where: { name: request.websiteName } });
           if (!website) {
-            throw new InsertSubscriptionWebsiteNotFound();
+            throw new CreateSubscriptionWebsiteNotFound();
           }
 
           const existingSubscription = await t.subscription.findFirst({
@@ -178,6 +178,7 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
             await t.subscriptionInterest.createMany({
               data: missingInterestIds.map(interestId => ({
                 subscriptionId,
+                websiteId: website.websiteId,
                 interestId,
                 created: prismaNow,
               })),
@@ -190,7 +191,7 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
           });
         });
       } catch (err) {
-        if (err instanceof InsertSubscriptionError) {
+        if (err instanceof CreateSubscriptionError) {
           return Result.fail(err);
         }
         throw err;

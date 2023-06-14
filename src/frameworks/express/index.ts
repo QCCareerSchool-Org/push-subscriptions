@@ -7,10 +7,10 @@ import helmet from 'helmet';
 import { CheckAuthenticationMiddleware } from '../../controllers/authentication/checkAuthenticationMiddleware';
 import { NotFoundController } from '../../controllers/notFoundController';
 import { environmentConfigService, winstonLoggerService } from '../../services';
+import { adminRouter } from './administratorRouter';
 import { asyncWrapper } from './asyncWrapper';
 import { authenticationRouter } from './authenticationRouter';
 import { globalErrorHandler } from './globalErrorHandler';
-import { protectedRouter } from './protectedRouter';
 import { router } from './router';
 
 const { port, environment } = environmentConfigService.config;
@@ -46,7 +46,7 @@ app.use(asyncWrapper(async (req, res, next) => {
   await middleware.execute();
 }));
 
-app.use('/', protectedRouter);
+app.use('/admin', adminRouter);
 
 // all other routes return 404
 app.use(asyncWrapper(async (req, res) => {

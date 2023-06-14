@@ -1,12 +1,12 @@
 import type { Interest, PrismaClient, Subscription, SubscriptionInterest } from '@prisma/client';
 
-import type { SubscriptionDTO } from '../domain/subscription';
-import type { IDateService } from '../services/date';
-import type { ILoggerService } from '../services/logger';
-import type { IUUIDService } from '../services/uuid';
-import type { ResultType } from './result';
-import { Result } from './result';
-import type { IInteractor } from '.';
+import type { IInteractor } from '..';
+import type { SubscriptionDTO } from '../../domain/subscription';
+import type { IDateService } from '../../services/date';
+import type { ILoggerService } from '../../services/logger';
+import type { IUUIDService } from '../../services/uuid';
+import type { ResultType } from '../result';
+import { Result } from '../result';
 
 export type UpdateSubscriptionRequest = {
   /** UUID */
@@ -97,6 +97,7 @@ export class UpdateSubscriptionInteractor implements IInteractor<UpdateSubscript
             await t.subscriptionInterest.createMany({
               data: missingInterestIds.map(interestId => ({
                 subscriptionId: subscriptionIdBin,
+                websiteId: website.websiteId,
                 interestId,
                 created: prismaNow,
               })),

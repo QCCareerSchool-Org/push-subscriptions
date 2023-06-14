@@ -2,10 +2,10 @@ import type { Stream } from 'stream';
 
 import { prisma } from '../frameworks/prisma';
 import { dateService, ipaddrJSIPAddressService, uuidService, winstonLoggerService } from '../services';
+import { UpdateSubscriptionInteractor } from './administrators/updateSubscriptionInteractor';
+import { CreateSubscriptionInteractor } from './createSubscriptionInteractor';
 import { DeleteSubscriptionsInteractor } from './deleteSubscriptionsInteractor';
-import { InsertSubscriptionInteractor } from './insertSubscriptionInteractor';
 import type { ResultType } from './result';
-import { UpdateSubscriptionInteractor } from './updateSubscriptionInteractor';
 import { UpdateSubscriptionsInteractor } from './updateSubscriptionsInteractor';
 
 export class InsufficientPrivileges extends Error { }
@@ -47,7 +47,7 @@ export type InteractorFileStreamDownload = {
   download?: boolean;
 };
 
-export const insertSubscriptionInteractor = new InsertSubscriptionInteractor(prisma, uuidService, dateService, ipaddrJSIPAddressService, winstonLoggerService);
+export const createSubscriptionInteractor = new CreateSubscriptionInteractor(prisma, uuidService, dateService, ipaddrJSIPAddressService, winstonLoggerService);
 export const updateSubscriptionsInteractor = new UpdateSubscriptionsInteractor(prisma, winstonLoggerService);
 export const deleteSubscriptionsInteractor = new DeleteSubscriptionsInteractor(prisma, winstonLoggerService);
 export const updateSubscriptionInteractor = new UpdateSubscriptionInteractor(prisma, uuidService, dateService, winstonLoggerService);

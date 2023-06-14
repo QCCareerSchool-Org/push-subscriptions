@@ -2,9 +2,9 @@ import type { BrowserDetectInfo } from 'browser-detect/dist/types/browser-detect
 import type { CityResponse } from 'maxmind';
 import * as yup from 'yup';
 
-import { insertSubscriptionInteractor } from '../interactors';
-import type { InsertSubscriptionResponse } from '../interactors/insertSubscriptionInteractor';
-import { InsertSubscriptionWebsiteNotFound } from '../interactors/insertSubscriptionInteractor';
+import { createSubscriptionInteractor } from '../interactors';
+import type { CreateSubscriptionResponse } from '../interactors/createSubscriptionInteractor';
+import { CreateSubscriptionWebsiteNotFound } from '../interactors/createSubscriptionInteractor';
 import { BaseController } from './baseController';
 
 type Request = {
@@ -23,9 +23,9 @@ type Request = {
   };
 };
 
-type Response = InsertSubscriptionResponse;
+type Response = CreateSubscriptionResponse;
 
-export class InsertSubscriptionController extends BaseController<Request, Response> {
+export class CreateSubscriptionController extends BaseController<Request, Response> {
 
   protected async validate(): Promise<false | Request> {
     const bodySchema: yup.Schema<Request['body']> = yup.object({
@@ -76,7 +76,7 @@ export class InsertSubscriptionController extends BaseController<Request, Respon
       ipAddress = this.req.socket.remoteAddress;
     }
 
-    const result = await insertSubscriptionInteractor.execute({
+    const result = await createSubscriptionInteractor.execute({
       websiteName: body.websiteName,
       endpoint: body.endpoint,
       expirationTime: body.expirationTime,
@@ -101,7 +101,7 @@ export class InsertSubscriptionController extends BaseController<Request, Respon
     }
 
     switch (result.error.constructor) {
-      case InsertSubscriptionWebsiteNotFound:
+      case CreateSubscriptionWebsiteNotFound:
         return this.badRequest('Website not found');
       default:
         return this.internalServerError(result.error.message);
