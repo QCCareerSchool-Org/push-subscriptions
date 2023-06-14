@@ -11,7 +11,6 @@ type Request = {
   body: {
     username: string;
     password: string;
-    stayLoggedIn?: boolean;
   };
 };
 
@@ -23,7 +22,6 @@ export class LoginController extends BaseController<Request, Response> {
     const bodySchema: yup.Schema<Request['body']> = yup.object({
       username: yup.string().required(),
       password: yup.string().required(),
-      stayLoggedIn: yup.boolean(),
     });
     try {
       const body = await bodySchema.validate(this.req.body);
@@ -43,7 +41,7 @@ export class LoginController extends BaseController<Request, Response> {
       return this.methodNotAllowed();
     }
 
-    const { username, password, stayLoggedIn } = body;
+    const { username, password } = body;
 
     // read browser data from request (created by middleware)
     const browser = this.res.locals.browser as BrowserDetectInfo | undefined;
@@ -65,7 +63,6 @@ export class LoginController extends BaseController<Request, Response> {
     const result = await loginInteractor.execute({
       username,
       password,
-      stayLoggedIn,
       ipAddress,
       browser: browser?.name ?? null,
       browserVersion: browser?.version ?? null,

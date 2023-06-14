@@ -17,7 +17,6 @@ import { Result } from '../result';
 type LoginRequestDTO = {
   username: string;
   password: string;
-  stayLoggedIn?: boolean;
   ipAddress: string | null;
   browser: string | null;
   browserVersion: string | null;
@@ -155,11 +154,8 @@ export class LoginInteractor implements IInteractor<LoginRequestDTO, LoginRespon
       const refreshCookieOptions: CookieOptions = {
         ...baseCookieOptions,
         path: path.join(this.configService.config.auth.cookiePath, '/v1/auth/refresh'),
+        maxAge: this.configService.config.auth.refreshTokenLifetime * 1000,
       };
-
-      if (request.stayLoggedIn) {
-        refreshCookieOptions.maxAge = this.configService.config.auth.refreshTokenLifetime * 1000;
-      }
 
       return Result.success({
         accessTokenPayload,
