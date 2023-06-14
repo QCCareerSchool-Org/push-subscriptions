@@ -85,7 +85,7 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
       if (request.browserVersion) {
         data.browserVersion = request.browserVersion;
       }
-      if (request.mobile) {
+      if (request.mobile !== null) {
         data.mobile = request.mobile;
       }
       if (request.os) {
