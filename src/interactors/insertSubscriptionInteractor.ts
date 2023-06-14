@@ -118,7 +118,7 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
           }
 
           const existingSubscription = await t.subscription.findFirst({
-            where: { endpoint: request.endpoint, websiteId: website.websiteId },
+            where: { endpoint: request.endpoint, websiteId: website.websiteId, errorCode: null, unsubscribed: false },
             include: { interests: true },
           });
 
