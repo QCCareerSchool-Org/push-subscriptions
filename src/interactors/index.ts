@@ -1,7 +1,7 @@
 import type { Stream } from 'stream';
 
 import { prisma } from '../frameworks/prisma';
-import { dateService, uuidService, winstonLoggerService } from '../services';
+import { dateService, ipaddrJSIPAddressService, uuidService, winstonLoggerService } from '../services';
 import { DeleteSubscriptionsInteractor } from './deleteSubscriptionsInteractor';
 import { InsertSubscriptionInteractor } from './insertSubscriptionInteractor';
 import type { ResultType } from './result';
@@ -47,7 +47,7 @@ export type InteractorFileStreamDownload = {
   download?: boolean;
 };
 
-export const insertSubscriptionInteractor = new InsertSubscriptionInteractor(prisma, uuidService, dateService, winstonLoggerService);
+export const insertSubscriptionInteractor = new InsertSubscriptionInteractor(prisma, uuidService, dateService, ipaddrJSIPAddressService, winstonLoggerService);
 export const updateSubscriptionsInteractor = new UpdateSubscriptionsInteractor(prisma, winstonLoggerService);
 export const deleteSubscriptionsInteractor = new DeleteSubscriptionsInteractor(prisma, winstonLoggerService);
 export const updateSubscriptionInteractor = new UpdateSubscriptionInteractor(prisma, uuidService, dateService, winstonLoggerService);
