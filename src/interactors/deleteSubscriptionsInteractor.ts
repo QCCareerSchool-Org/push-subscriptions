@@ -28,15 +28,16 @@ export class DeleteSubscriptionsInteractor implements IInteractor<DeleteSubscrip
         return Result.fail(new DeleteSubscriptionsWebsiteNotFound());
       }
 
-      const batchPayload = await this.prisma.subscription.deleteMany({
+      const batchPayload = await this.prisma.subscription.updateMany({
+        data: { unsubscribed: true },
         where: { endpoint: request.endpoint, websiteId: website.websiteId },
       });
 
-      const deletedCount = batchPayload.count;
+      const udpatedCount = batchPayload.count;
 
-      return Result.success(deletedCount);
+      return Result.success(udpatedCount);
     } catch (err) {
-      this.logger.error('error inserting subscription', err instanceof Error ? err.message : err);
+      this.logger.error('error deleting subscription', err instanceof Error ? err.message : err);
       return Result.fail(err instanceof Error ? err : Error('unknown error'));
     }
   }
