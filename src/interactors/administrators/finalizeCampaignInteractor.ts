@@ -61,8 +61,6 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
             created: prismaNow,
           } as const;
 
-          await new Promise(res => setTimeout(res, 5_000));
-
           return t.send.createMany({
             data: subscriptions.map(s => ({
               ...baseData,
@@ -72,8 +70,8 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
           });
         }, {
           isolationLevel: Prisma.TransactionIsolationLevel.Serializable, // optional, default defined by database configuration
-          maxWait: 10_000, // default: 2000
-          timeout: 20_000, // default: 5000
+          maxWait: 4_000, // default: 2000
+          timeout: 300_000, // default: 5000
         });
       } catch (err) {
         if (err instanceof FinalizeCampaignError) {
