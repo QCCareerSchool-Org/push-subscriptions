@@ -37,7 +37,7 @@ export class InsertSubscriptionController extends BaseController<Request, Respon
         lastName: yup.string().nullable().defined(),
         emailAddress: yup.string().nullable().defined(),
         interests: yup.array().of(yup.string().required()),
-      }).optional(),
+      }).default(undefined),
     });
     try {
       const body = await bodySchema.validate(this.req.body);
