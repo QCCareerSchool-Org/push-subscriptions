@@ -30,7 +30,7 @@ export class UpdateSubscriptionsInteractor implements IInteractor<UpdateSubscrip
 
   public async execute(request: UpdateSubscriptionsRequest): Promise<ResultType<UpdateSubscriptionsResponse>> {
     try {
-      const website = await this.prisma.website.findFirst({ where: { name: request.websiteName } });
+      const website = await this.prisma.website.findUnique({ where: { name: request.websiteName } });
       if (!website) {
         return Result.fail(new UpdateSubscriptionsWebsiteNotFound());
       }
@@ -44,7 +44,7 @@ export class UpdateSubscriptionsInteractor implements IInteractor<UpdateSubscrip
 
       const batchPayload = await this.prisma.subscription.updateMany({
         data,
-        where: { endpoint: request.oldEndpoint, websiteId: website.websiteId },
+        where: { endpoint: request.oldEndpoint, websiteId: website.websiteId, errorCode: null, unsubscribed: false },
       });
 
       const updatedCount = batchPayload.count;

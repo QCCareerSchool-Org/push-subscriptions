@@ -55,7 +55,7 @@ export class UpdateSubscriptionInteractor implements IInteractor<UpdateSubscript
 
       try {
         updatedSubscription = await this.prisma.$transaction(async t => {
-          const website = await this.prisma.website.findFirst({ where: { name: request.websiteName } });
+          const website = await this.prisma.website.findUnique({ where: { name: request.websiteName } });
           if (!website) {
             throw new UpdateSubscriptionWebsiteNotFound();
           }

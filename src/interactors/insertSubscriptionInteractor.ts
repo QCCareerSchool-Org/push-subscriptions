@@ -112,7 +112,7 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
 
       try {
         subscription = await this.prisma.$transaction(async t => {
-          const website = await t.website.findFirst({ where: { name: request.websiteName } });
+          const website = await t.website.findUnique({ where: { name: request.websiteName } });
           if (!website) {
             throw new InsertSubscriptionWebsiteNotFound();
           }
