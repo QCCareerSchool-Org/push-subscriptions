@@ -19,7 +19,8 @@ model Subscription {
   firstName      String?                @map("first_name")
   lastName       String?                @map("last_name")
   emailAddress   String?                @map("email_address")
-  ipAddress      Bytes?                 @map("ip_address") @db.VarBinary(16)
+  ipAddress      Bytes?                 @map("ip_address") @db.Binary(16)
+  userAgent      String?                @map("user_agent") @db.VarChar(4096)
   browser        String?
   browserVersion String?                @map("browser_version")
   mobile         Boolean?

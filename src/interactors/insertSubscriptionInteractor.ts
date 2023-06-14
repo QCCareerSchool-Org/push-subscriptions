@@ -2,6 +2,7 @@ import type { Interest, PrismaClient, Subscription, SubscriptionInterest } from 
 
 import type { SubscriptionDTO } from '../domain/subscription';
 import type { IDateService } from '../services/date';
+import type { IIPAddressService } from '../services/ipaddress';
 import type { ILoggerService } from '../services/logger';
 import type { IUUIDService } from '../services/uuid';
 import type { ResultType } from './result';
@@ -46,6 +47,7 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
     private readonly prisma: PrismaClient,
     private readonly uuidService: IUUIDService,
     private readonly dateService: IDateService,
+    private readonly ipAddressService: IIPAddressService,
     private readonly logger: ILoggerService,
   ) { /* empty */ }
 
@@ -69,6 +71,37 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
         if (request.meta.emailAddress) {
           data.emailAddress = request.meta.emailAddress;
         }
+      }
+
+      if (request.ipAddress) {
+        data.ipAddress = this.ipAddressService.parse(request.ipAddress);
+      }
+      if (request.userAgent) {
+        data.userAgent = request.userAgent;
+      }
+      if (request.browser) {
+        data.browser = request.browser;
+      }
+      if (request.browserVersion) {
+        data.browserVersion = request.browserVersion;
+      }
+      if (request.mobile) {
+        data.mobile = request.mobile;
+      }
+      if (request.os) {
+        data.os = request.os;
+      }
+      if (request.city) {
+        data.city = request.city;
+      }
+      if (request.country) {
+        data.country = request.country;
+      }
+      if (request.latitude) {
+        data.latitude = request.latitude;
+      }
+      if (request.longitude) {
+        data.longitude = request.longitude;
       }
 
       let subscription: Subscription & {
