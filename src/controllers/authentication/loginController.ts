@@ -25,6 +25,7 @@ export class LoginController extends BaseController<Request, Response> {
     });
     try {
       console.log(this.req.body);
+      console.log(this.req.headers);
       const body = await bodySchema.validate(this.req.body);
       return { body };
     } catch (error) {
