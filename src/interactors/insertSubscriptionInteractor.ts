@@ -106,6 +106,8 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
             existingInterestIds = [];
           }
 
+          console.log('interests', request.meta?.interests);
+
           // add any interests that aren't already present
           if (request.meta?.interests) {
             // look up all the interests that we want to add
@@ -125,6 +127,9 @@ export class InsertSubscriptionInteractor implements IInteractor<InsertSubscript
             // determine which ones aren't already present
             const interestIds = interests.map(i => i.interestId);
             const missingInterestIds = interestIds.filter(i => !existingInterestIds.some(e => e.compare(i) === 0));
+
+            console.log('interestIds', interestIds);
+            console.log('missingInterestIds', missingInterestIds);
 
             // add the missing subscriptionInterests
             await t.subscriptionInterest.createMany({
