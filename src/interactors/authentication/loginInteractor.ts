@@ -141,7 +141,7 @@ export class LoginInteractor implements IInteractor<LoginRequestDTO, LoginRespon
       const baseCookieOptions = {
         secure: this.configService.config.environment === 'production',
         httpOnly: true,
-        domain: this.configService.config.auth.cookieDomain,
+        // domain: this.configService.config.auth.cookieDomain,
         sameSite: 'strict',
       } as const;
 
