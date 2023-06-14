@@ -36,7 +36,7 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
 
       try {
         batchPayload = await this.prisma.$transaction(async t => {
-          const campaign = await this.prisma.campaign.findUnique({ where: { campaignId: campaignIdBin } });
+          const campaign = await t.campaign.findUnique({ where: { campaignId: campaignIdBin } });
           if (!campaign) {
             throw new FinalizeCampaignNotFound();
           }
@@ -45,12 +45,12 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
             throw new FinalizeCampaignAlreadyFinalized();
           }
 
-          await this.prisma.campaign.update({
+          await t.campaign.update({
             data: { finalized: prismaNow },
             where: { campaignId: campaignIdBin },
           });
 
-          const subscriptions = await this.prisma.subscription.findMany({
+          const subscriptions = await t.subscription.findMany({
             where: { websiteId: campaign.websiteId },
           });
 
@@ -60,7 +60,15 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
             created: prismaNow,
           } as const;
 
-          return this.prisma.send.createMany({
+          await t.send.create({
+            data: {
+              ...baseData,
+              subscriptionId: Buffer.from('dflgkjsdflkjg'),
+              created: prismaNow,
+            },
+          });
+
+          return t.send.createMany({
             data: subscriptions.map(s => ({
               ...baseData,
               subscriptionId: s.subscriptionId,

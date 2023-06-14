@@ -11,7 +11,7 @@ type Request = {
   };
 };
 
-type Response = FinalizeCampaignResponse;
+type Response = { count: number };
 
 export class FinalizeCampaignController extends BaseController<Request, Response> {
 
@@ -40,7 +40,7 @@ export class FinalizeCampaignController extends BaseController<Request, Response
     const result = await finalizeCampaignInteractor.execute({ campaignId: params.campaignId });
 
     if (result.success) {
-      return this.ok(result.value);
+      return this.ok({ count: result.value });
     }
 
     switch (result.error.constructor) {
