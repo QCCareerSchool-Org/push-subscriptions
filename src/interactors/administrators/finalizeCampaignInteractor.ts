@@ -1,4 +1,5 @@
-import type { Prisma, PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import type { IInteractor } from '..';
 import type { IDateService } from '../../services/date';
@@ -60,7 +61,7 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
             created: prismaNow,
           } as const;
 
-          await new Promise(res => setTimeout(res, 2_000));
+          await new Promise(res => setTimeout(res, 5_000));
 
           return t.send.createMany({
             data: subscriptions.map(s => ({
@@ -69,6 +70,10 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
               created: prismaNow,
             })),
           });
+        }, {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable, // optional, default defined by database configuration
+          maxWait: 10_000, // default: 2000
+          timeout: 20_000, // default: 5000
         });
       } catch (err) {
         if (err instanceof FinalizeCampaignError) {
