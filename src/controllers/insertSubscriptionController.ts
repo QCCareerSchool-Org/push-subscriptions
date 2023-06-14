@@ -1,3 +1,5 @@
+import type { BrowserDetectInfo } from 'browser-detect/dist/types/browser-detect.interface';
+import type { CityResponse } from 'maxmind';
 import * as yup from 'yup';
 
 import { insertSubscriptionInteractor } from '../interactors';
@@ -57,6 +59,23 @@ export class InsertSubscriptionController extends BaseController<Request, Respon
       return this.methodNotAllowed();
     }
 
+    // read browser data from request (created by middleware)
+    const browser = this.res.locals.browser as BrowserDetectInfo | undefined;
+
+    // read location data from request (created by middleware)
+    const location = this.res.locals.location as CityResponse | undefined;
+
+    // read ip address data from request
+    let ipAddress: string | null = null;
+    const forwardedFor = this.req.headers['x-forwarded-for'];
+    if (Array.isArray(forwardedFor) && forwardedFor.length) {
+      ipAddress = forwardedFor[0].split(',')[0].trim();
+    } else if (typeof forwardedFor === 'string') {
+      ipAddress = forwardedFor.split(',')[0].trim();
+    } else if (typeof this.req.socket.remoteAddress === 'string') {
+      ipAddress = this.req.socket.remoteAddress;
+    }
+
     const result = await insertSubscriptionInteractor.execute({
       websiteName: body.websiteName,
       endpoint: body.endpoint,
@@ -64,6 +83,17 @@ export class InsertSubscriptionController extends BaseController<Request, Respon
       p256dh: body.p256dh,
       auth: body.auth,
       meta: body.meta,
+
+      ipAddress,
+      userAgent: this.req.headers['user-agent'] ?? null,
+      browser: browser?.name ?? null,
+      browserVersion: browser?.version ?? null,
+      mobile: browser?.mobile ?? null,
+      os: browser?.os ?? null,
+      city: location?.city?.names.en ?? null,
+      country: location?.country?.iso_code ?? null,
+      latitude: location?.location?.latitude ?? null,
+      longitude: location?.location?.longitude ?? null,
     });
 
     if (result.success) {

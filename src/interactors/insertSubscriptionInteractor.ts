@@ -23,6 +23,16 @@ export type InsertSubscriptionRequest = {
     emailAddress: string | null;
     interests?: string[];
   };
+  ipAddress: string | null;
+  userAgent: string | null;
+  browser: string | null;
+  browserVersion: string | null;
+  mobile: boolean | null;
+  os: string | null;
+  city: string | null;
+  country: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export type InsertSubscriptionResponse = SubscriptionDTO;

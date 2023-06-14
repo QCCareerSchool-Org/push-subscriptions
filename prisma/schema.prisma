@@ -19,6 +19,15 @@ model Subscription {
   firstName      String?                @map("first_name")
   lastName       String?                @map("last_name")
   emailAddress   String?                @map("email_address")
+  ipAddress      Bytes?                 @map("ip_address") @db.VarBinary(16)
+  browser        String?
+  browserVersion String?                @map("browser_version")
+  mobile         Boolean?
+  os             String?
+  city           String?
+  country        String?                @db.Char(2)
+  latitude       Decimal?               @db.Decimal(7, 4)
+  longitude      Decimal?               @db.Decimal(7, 4)
   errorCode      Int?                   @map("error_code") @db.SmallInt
   created        DateTime               @default(now()) @db.Timestamp(6)
   modified       DateTime               @default(now()) @db.Timestamp(6)
