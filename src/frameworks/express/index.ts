@@ -1,4 +1,5 @@
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import type { CorsOptions } from 'cors';
 import cors from 'cors';
 import express from 'express';
@@ -34,6 +35,7 @@ const app = express();
 app.use(helmet());
 app.use(compression());
 app.use(express.json({ limit: 524_288 })); // 512 KB
+app.use(cookieParser());
 app.use(cors(corsOptions));
 
 app.use('/', router);
