@@ -24,8 +24,8 @@ export class LoginController extends BaseController<Request, Response> {
       password: yup.string().required(),
     });
     try {
-      const body = await bodySchema.validate(this.req.body);
       console.log(body);
+      const body = await bodySchema.validate(this.req.body);
       return { body };
     } catch (error) {
       if (error instanceof Error) {
