@@ -71,7 +71,7 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
             })),
           });
         }, {
-          isolationLevel: Prisma.TransactionIsolationLevel.Serializable, // optional, default defined by database configuration
+          isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, // optional, default defined by database configuration
           maxWait: 10_000, // default: 2000
           timeout: 20_000, // default: 5000
         });
