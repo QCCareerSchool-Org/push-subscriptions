@@ -60,14 +60,6 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
             created: prismaNow,
           } as const;
 
-          await t.send.create({
-            data: {
-              ...baseData,
-              subscriptionId: Buffer.from('dflgkjsdflkjg'),
-              created: prismaNow,
-            },
-          });
-
           return t.send.createMany({
             data: subscriptions.map(s => ({
               ...baseData,
