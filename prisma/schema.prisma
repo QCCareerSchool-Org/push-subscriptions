@@ -9,6 +9,17 @@ datasource db {
   schemas  = ["general", "push"]
 }
 
+model Website {
+  websiteId     Bytes          @id @map("website_id") @db.Binary(16)
+  name          String         @unique(map: "name")
+  created       DateTime       @default(now()) @db.Timestamp(6)
+  interests     Interest[]
+  subscriptions Subscription[]
+  campaigns     Campaign[]
+
+  @@map("websites")
+}
+
 model Subscription {
   subscriptionId Bytes                  @id @map("subscription_id") @db.Binary(16)
   websiteId      Bytes                  @map("website_id") @db.Binary(16)
@@ -30,23 +41,15 @@ model Subscription {
   latitude       Decimal?               @db.Decimal(7, 4)
   longitude      Decimal?               @db.Decimal(7, 4)
   errorCode      Int?                   @map("error_code") @db.SmallInt
+  unsubscribed   Boolean                @default(false)
   created        DateTime               @default(now()) @db.Timestamp(6)
   modified       DateTime               @default(now()) @db.Timestamp(6)
   websites       Website                @relation(fields: [websiteId], references: [websiteId], map: "FK_subscriptions_websites")
   interests      SubscriptionInterest[]
+  sends          Send[]
 
-  @@index([websiteId], map: "FK_subscriptions_websites")
+  @@index([websiteId], map: "website_id")
   @@map("subscriptions")
-}
-
-model Website {
-  websiteId     Bytes          @id @map("website_id") @db.Binary(16)
-  name          String         @unique(map: "name")
-  created       DateTime       @default(now()) @db.Timestamp(6)
-  interests     Interest[]
-  subscriptions Subscription[]
-
-  @@map("websites")
 }
 
 model Interest {
@@ -54,7 +57,7 @@ model Interest {
   websiteId     Bytes                  @map("website_id") @db.Binary(16)
   name          String
   description   String?                @db.Text
-  websites      Website                @relation(fields: [websiteId], references: [websiteId], onDelete: Cascade, map: "FK_interests_websites")
+  website       Website                @relation(fields: [websiteId], references: [websiteId], onDelete: Cascade, map: "FK_interests_websites")
   subscriptions SubscriptionInterest[]
 
   @@unique([websiteId, name], map: "website_id_name")
@@ -69,9 +72,42 @@ model SubscriptionInterest {
   subscription   Subscription @relation(fields: [subscriptionId], references: [subscriptionId], onDelete: Cascade, map: "FK_subscriptions_interests_subscriptions")
 
   @@id([subscriptionId, interestId], name: "subscriptionIdInterestId")
-  @@index([interestId], map: "FK_subscriptions_interests_interests")
+  @@index([interestId], map: "interest_id")
   @@map("subscriptions_interests")
 }
+
+model Campaign {
+  campaignId    Bytes          @id @map("campaign_id") @db.Binary(16)
+  websiteId     Bytes          @map("website_id") @db.Binary(16)
+  name          String         @db.VarChar(255)
+  heading       String         @db.VarChar(191)
+  content       String         @db.Text
+  url           String?        @db.VarChar(1024)
+  finalized     DateTime?      @db.Timestamp(6)
+  sent          DateTime?      @db.Timestamp(6)
+  finished      DateTime?      @db.Timestamp(6)
+  created       DateTime       @default(now()) @db.Timestamp(6)
+  modified      DateTime       @default(now()) @db.Timestamp(6)
+  website       Website        @relation(fields: [websiteId], references: [websiteId], map: "FK_campaigns_websites")
+  sends         Send[]
+
+  @@index([websiteId], map: "website_id")
+  @@map("campaigns")
+}
+
+model Send {
+  campaignId     Bytes        @map("campaign_id") @db.Binary(16)
+  subscriptionId Bytes        @map("subscription_id") @db.Binary(16)
+  created        DateTime     @default(now()) @db.Timestamp(6)
+  modified       DateTime     @default(now()) @db.Timestamp(6)
+  campaign       Campaign     @relation(fields: [campaignId], references: [campaignId], map: "FK_sends_campaigns")
+  subscription   Subscription @relation(fields: [subscriptionId], references: [subscriptionId], map: "FK_sends_subscriptions")
+
+  @@id([campaignId, subscriptionId], name: "campaignWebsite")
+  @@index([subscriptionId], map: "subscription_id")
+  @@map("sends")
+}
+
 
 model User {
   userId               Int            @id @map("id")
@@ -103,7 +139,7 @@ model RefreshToken {
   userId          Int            @map("user_id")
   token           Bytes          @unique(map: "token") @db.Binary(64)
   expiry          DateTime       @db.Timestamp(0)
-  ipAddress       Bytes?         @map("ip_address") @db.VarBinary(16)
+  ipAddress       Bytes?         @map("ip_address") @db.Binary(16)
   browser         String?
   browserVersion  String?        @map("browser_version")
   mobile          Boolean?
