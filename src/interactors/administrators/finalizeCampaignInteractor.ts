@@ -65,14 +65,14 @@ SELECT DISTINCT ci.campaign_id, s.subscription_id, ci.website_id, null, null, nu
 FROM subscriptions s
 JOIN subscriptions_interests si ON si.subscription_id = s.subscription_id
 JOIN campaigns_interests ci ON ci.interest_id = si.interest_id
-WHERE ci.campaign_id = ${campaignIdBin}`;
+WHERE ci.campaign_id = ${campaignIdBin} AND s.unsubscribed = 0 AND s.error_code IS NULL`;
           } else {
             await t.$queryRaw`
 INSERT INTO sends
 SELECT c.campaign_id, s.subscription_id, c.website_id, null, null, null, NOW(6)
 FROM subscriptions s
 JOIN campaigns c ON c.website_id = s.website_id
-WHERE c.campaign_id = ${campaignIdBin}`;
+WHERE c.campaign_id = ${campaignIdBin} AND s.unsubscribed = 0 AND s.error_code IS NULL`;
           }
 
           const aggregate = await t.send.aggregate({
