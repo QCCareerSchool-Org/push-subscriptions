@@ -1,8 +1,7 @@
 import * as yup from 'yup';
 
 import { finalizeCampaignInteractor } from '../../interactors/administrators';
-import type { FinalizeCampaignResponse } from '../../interactors/administrators/finalizeCampaignInteractor';
-import { FinalizeCampaignAlreadyFinalized, FinalizeCampaignNotFound } from '../../interactors/administrators/finalizeCampaignInteractor';
+import { FinalizeCampaignAlreadyFinalized, FinalizeCampaignNoMatchingSubscriptions, FinalizeCampaignNotFound, FinalizeCampaignResponse } from '../../interactors/administrators/finalizeCampaignInteractor';
 import { BaseController } from '../baseController';
 
 type Request = {
@@ -48,6 +47,8 @@ export class FinalizeCampaignController extends BaseController<Request, Response
         return this.notFound('Campaign not found');
       case FinalizeCampaignAlreadyFinalized:
         return this.badRequest('Campaign already finalized');
+      case FinalizeCampaignNoMatchingSubscriptions:
+        return this.badRequest('No matching subscriptions found');
       default:
         return this.internalServerError(result.error.message);
     }

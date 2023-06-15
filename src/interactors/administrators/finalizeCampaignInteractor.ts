@@ -17,6 +17,7 @@ export type FinalizeCampaignResponse = number;
 export class FinalizeCampaignError extends Error { }
 export class FinalizeCampaignNotFound extends FinalizeCampaignError { }
 export class FinalizeCampaignAlreadyFinalized extends FinalizeCampaignError { }
+export class FinalizeCampaignNoMatchingSubscriptions extends FinalizeCampaignError { }
 
 export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignRequest, FinalizeCampaignResponse> {
 
@@ -77,7 +78,13 @@ WHERE website_id = ${campaign.websiteId}`;
             where: { campaignId: campaignIdBin },
           });
 
-          return aggregate._count._all;
+          const count = aggregate._count._all;
+
+          if (count === 0) {
+            throw new FinalizeCampaignNoMatchingSubscriptions();
+          }
+
+          return count;
         }, {
           isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
           timeout: FinalizeCampaignInteractor.transactionTimeout,
