@@ -33,10 +33,10 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
 
       const prismaNow = this.dateService.fixPrismaWriteDate(this.dateService.getDate());
 
-      let batchPayload: Prisma.BatchPayload;
+      let insertedCount: number;
 
       try {
-        await this.prisma.$transaction(async t => {
+        insertedCount = await this.prisma.$transaction(async t => {
           const campaign = await t.campaign.findUnique({ where: { campaignId: campaignIdBin } });
           if (!campaign) {
             throw new FinalizeCampaignNotFound();
@@ -51,14 +51,19 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
             where: { campaignId: campaignIdBin },
           });
 
-          const x = await t.$queryRaw`
+          // this takes about 1/5 the time as calling findMany and then calling createMany
+          await t.$queryRaw`
 INSERT INTO sends
 SELECT ${campaignIdBin}, subscription_id, ${campaign.websiteId}, null, null, null, NOW()
 FROM subscriptions
-WHERE website_id = ${campaign.websiteId}
-RETURNING *`;
+WHERE website_id = ${campaign.websiteId}`;
 
-          console.log(x);
+          const aggregate = await t.send.aggregate({
+            _count: { _all: true },
+            where: { campaignId: campaignIdBin },
+          });
+
+          return aggregate._count._all;
 
           // const baseData = {
           //   campaignId: campaignIdBin,
@@ -89,10 +94,7 @@ RETURNING *`;
         throw err;
       }
 
-      // const udpatedCount = batchPayload.count;
-      const udpatedCount = 3;
-
-      return Result.success(udpatedCount);
+      return Result.success(insertedCount);
     } catch (err) {
       this.logger.error('error finalizing campaign', err instanceof Error ? err.message : err);
       return Result.fail(err instanceof Error ? err : Error('unknown error'));
