@@ -6,7 +6,7 @@ export class WebPushPushService implements IPushService {
 
   public constructor(private readonly emailAddress: string, private readonly privateKey: string, private readonly publicKey: string) { /* empty */ }
 
-  public async push(endpoint: string, p256dh: string, auth: string, heading: string, content: string, url: string | null): Promise<number> {
+  public async push(endpoint: string, p256dh: string, auth: string, title: string, body: string, url: string | null): Promise<number> {
     // webpush.setGCMAPIKey('<Your GCM API Key Here>');
     webpush.setVapidDetails(`mailto:${this.emailAddress}`, this.publicKey, this.privateKey);
 
@@ -16,9 +16,11 @@ export class WebPushPushService implements IPushService {
       keys: { auth, p256dh },
     };
 
-    console.log('sending content', content);
+    const payload = { title, body, url };
 
-    const sendResult = await webpush.sendNotification(pushSubscription, content);
+    console.log('sending payload', payload);
+
+    const sendResult = await webpush.sendNotification(pushSubscription, JSON.stringify(payload));
 
     return sendResult.statusCode;
   }
