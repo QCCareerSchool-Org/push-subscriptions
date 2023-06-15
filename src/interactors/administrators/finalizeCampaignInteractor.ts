@@ -67,11 +67,17 @@ JOIN subscriptions_interests si ON si.subscription_id = s.subscription_id
 JOIN campaigns_interests ci ON ci.interest_id = si.interest_id
 WHERE s.website_id = ${campaign.websiteId} AND ci.campaign_id = ${campaignIdBin}`;
           } else {
+            //             await t.$queryRaw`
+            // INSERT INTO sends
+            // SELECT ${campaignIdBin}, s.subscription_id, s.website_id, null, null, null, NOW(6)
+            // FROM subscriptions s
+            // WHERE s.website_id = ${campaign.websiteId}`;
             await t.$queryRaw`
-INSERT INTO sends
-SELECT ${campaignIdBin}, s.subscription_id, s.website_id, null, null, null, NOW(6)
-FROM subscriptions s
-WHERE s.website_id = ${campaign.websiteId}`;
+  INSERT INTO sends
+  SELECT c.campaign_id, s.subscription_id, c.website_id, null, null, null, NOW(6)
+  FROM subscriptions s
+  JOIN campaigns c USING(website_id)
+  WHERE c.campaign_id = ${campaignIdBin}`;
           }
 
           const aggregate = await t.send.aggregate({
