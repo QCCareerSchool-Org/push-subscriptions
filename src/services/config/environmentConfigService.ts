@@ -86,8 +86,8 @@ export class EnvironmentConfigService implements IConfigService {
       push: {
         emailAddress: pushEmailAddress,
         vapid: {
-          publicKey: vapidPrivateKey,
-          privateKey: vapidPublicKey,
+          privateKey: vapidPrivateKey,
+          publicKey: vapidPublicKey,
         },
       },
     };
