@@ -16,6 +16,8 @@ export class WebPushPushService implements IPushService {
       keys: { auth, p256dh },
     };
 
+    console.log('sending content', content);
+
     const sendResult = await webpush.sendNotification(pushSubscription, content);
 
     return sendResult.statusCode;
