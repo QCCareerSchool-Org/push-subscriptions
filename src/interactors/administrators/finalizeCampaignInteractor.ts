@@ -59,11 +59,11 @@ FROM subscriptions
 WHERE website_id = ${campaign.websiteId}`;
 
           const aggregate = await t.send.aggregate({
-            _count: { _all: true },
+            _count: { campaignId: true },
             where: { campaignId: campaignIdBin },
           });
 
-          return aggregate._count._all;
+          return aggregate._count.campaignId;
 
           // const baseData = {
           //   campaignId: campaignIdBin,
