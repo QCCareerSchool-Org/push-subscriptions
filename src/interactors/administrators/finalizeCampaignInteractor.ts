@@ -36,7 +36,7 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
       let batchPayload: Prisma.BatchPayload;
 
       try {
-        batchPayload = await this.prisma.$transaction(async t => {
+        await this.prisma.$transaction(async t => {
           const campaign = await t.campaign.findUnique({ where: { campaignId: campaignIdBin } });
           if (!campaign) {
             throw new FinalizeCampaignNotFound();
@@ -51,23 +51,31 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
             where: { campaignId: campaignIdBin },
           });
 
-          const subscriptions = await t.subscription.findMany({
-            where: { websiteId: campaign.websiteId },
-          });
+          const x = await t.$queryRaw`
+INSERT INTO sends
+SELECT ${campaignIdBin}, subscription_id, ${campaign.websiteId}, null, null, null, NOW()
+FROM subscriptions
+WHERE website_id = ${campaign.websiteId}`;
 
-          const baseData = {
-            campaignId: campaignIdBin,
-            websiteId: campaign.websiteId,
-            created: prismaNow,
-          } as const;
+          console.log(x);
 
-          return t.send.createMany({
-            data: subscriptions.map(s => ({
-              ...baseData,
-              subscriptionId: s.subscriptionId,
-              created: prismaNow,
-            })),
-          });
+          // const baseData = {
+          //   campaignId: campaignIdBin,
+          //   websiteId: campaign.websiteId,
+          //   created: prismaNow,
+          // } as const;
+
+          // const subscriptions = await t.subscription.findMany({
+          //   where: { websiteId: campaign.websiteId },
+          // });
+
+          // return t.send.createMany({
+          //   data: subscriptions.map(s => ({
+          //     ...baseData,
+          //     subscriptionId: s.subscriptionId,
+          //     created: prismaNow,
+          //   })),
+          // });
         }, {
           isolationLevel: Prisma.TransactionIsolationLevel.Serializable, // optional, default defined by database configuration
           maxWait: 4_000, // default: 2000
@@ -80,7 +88,8 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
         throw err;
       }
 
-      const udpatedCount = batchPayload.count;
+      // const udpatedCount = batchPayload.count;
+      const udpatedCount = 3;
 
       return Result.success(udpatedCount);
     } catch (err) {
