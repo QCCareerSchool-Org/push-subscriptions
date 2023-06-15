@@ -20,6 +20,8 @@ export class FinalizeCampaignAlreadyFinalized extends FinalizeCampaignError { }
 
 export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignRequest, FinalizeCampaignResponse> {
 
+  public static transactionTimeout = 30_000; // 30 seconds
+
   public constructor(
     private readonly prisma: PrismaClient,
     private readonly uuidService: IUUIDService,
@@ -37,61 +39,48 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
 
       try {
         insertedCount = await this.prisma.$transaction(async t => {
-          console.log('a');
-          const campaign = await t.campaign.findUnique({ where: { campaignId: campaignIdBin } });
+          const campaign = await t.campaign.findUnique({
+            where: { campaignId: campaignIdBin },
+            include: { interests: true },
+          });
           if (!campaign) {
             throw new FinalizeCampaignNotFound();
           }
 
-          console.log('b');
           if (campaign.finalized !== null) {
             throw new FinalizeCampaignAlreadyFinalized();
           }
 
-          console.log('c');
           await t.campaign.update({
             data: { finalized: prismaNow },
             where: { campaignId: campaignIdBin },
           });
 
-          console.log('d');
           // this takes about 1/5 the time as calling findMany and then calling createMany
-          await t.$queryRaw`
+          if (campaign.interests.length) {
+            await t.$queryRaw`
 INSERT INTO sends
-SELECT ${campaignIdBin}, subscription_id, ${campaign.websiteId}, null, null, null, NOW()
-FROM subscriptions
+SELECT ${campaignIdBin}, s.subscription_id, ${campaign.websiteId}, null, null, null, NOW()
+FROM subscriptions s
+JOIN subscription_interests si USING(subscription_id)
+WHERE website_id = ${campaign.websiteId} AND interest_id IN (${campaign.interests.map(i => i.interestId).join()})`;
+          } else {
+            await t.$queryRaw`
+INSERT INTO sends
+SELECT ${campaignIdBin}, s.subscription_id, ${campaign.websiteId}, null, null, null, NOW()
+FROM subscriptions s
 WHERE website_id = ${campaign.websiteId}`;
+          }
 
-          console.log('e');
           const aggregate = await t.send.aggregate({
             _count: { _all: true },
             where: { campaignId: campaignIdBin },
           });
 
-          console.log('f');
           return aggregate._count._all;
-
-          // const baseData = {
-          //   campaignId: campaignIdBin,
-          //   websiteId: campaign.websiteId,
-          //   created: prismaNow,
-          // } as const;
-
-          // const subscriptions = await t.subscription.findMany({
-          //   where: { websiteId: campaign.websiteId },
-          // });
-
-          // return t.send.createMany({
-          //   data: subscriptions.map(s => ({
-          //     ...baseData,
-          //     subscriptionId: s.subscriptionId,
-          //     created: prismaNow,
-          //   })),
-          // });
         }, {
-          isolationLevel: Prisma.TransactionIsolationLevel.Serializable, // optional, default defined by database configuration
-          maxWait: 4_000, // default: 2000
-          timeout: 300_000, // default: 5000
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          timeout: FinalizeCampaignInteractor.transactionTimeout,
         });
       } catch (err) {
         if (err instanceof FinalizeCampaignError) {
