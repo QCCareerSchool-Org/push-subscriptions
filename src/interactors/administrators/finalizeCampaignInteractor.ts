@@ -37,20 +37,24 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
 
       try {
         insertedCount = await this.prisma.$transaction(async t => {
+          console.log('a');
           const campaign = await t.campaign.findUnique({ where: { campaignId: campaignIdBin } });
           if (!campaign) {
             throw new FinalizeCampaignNotFound();
           }
 
+          console.log('b');
           if (campaign.finalized !== null) {
             throw new FinalizeCampaignAlreadyFinalized();
           }
 
+          console.log('c');
           await t.campaign.update({
             data: { finalized: prismaNow },
             where: { campaignId: campaignIdBin },
           });
 
+          console.log('d');
           // this takes about 1/5 the time as calling findMany and then calling createMany
           await t.$queryRaw`
 INSERT INTO sends
@@ -58,12 +62,14 @@ SELECT ${campaignIdBin}, subscription_id, ${campaign.websiteId}, null, null, nul
 FROM subscriptions
 WHERE website_id = ${campaign.websiteId}`;
 
+          console.log('e');
           const aggregate = await t.send.aggregate({
-            _count: { campaignId: true },
+            _count: { _all: true },
             where: { campaignId: campaignIdBin },
           });
 
-          return aggregate._count.campaignId;
+          console.log('f');
+          return aggregate._count._all;
 
           // const baseData = {
           //   campaignId: campaignIdBin,
