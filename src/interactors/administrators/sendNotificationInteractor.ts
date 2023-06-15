@@ -19,6 +19,9 @@ export type SendNotificationResponse = boolean;
 export class SendNotificationError extends Error { }
 export class SendNotificationNotFound extends SendNotificationError { }
 export class SendNotificationAlreadySent extends SendNotificationError { }
+export class SendNotificationRemoteServerError extends SendNotificationError {
+  public constructor(public readonly responseCode: number, message?: string) { super(message); }
+}
 
 export class SendNotificationInteractor implements IInteractor<SendNotificationRequest, SendNotificationResponse> {
 
@@ -37,10 +40,10 @@ export class SendNotificationInteractor implements IInteractor<SendNotificationR
       const campaignIdBin = this.uuidService.uuidToBin(request.campaignId);
       const subscriptionIdBin = this.uuidService.uuidToBin(request.subscriptionId);
 
-      let success: boolean;
+      let sendSuccess: boolean;
 
       try {
-        success = await this.prisma.$transaction(async t => {
+        sendSuccess = await this.prisma.$transaction(async t => {
           const notification = await t.notification.findUnique({
             where: { campaignSubscription: { campaignId: campaignIdBin, subscriptionId: subscriptionIdBin } },
             include: { campaign: true, subscription: true },
@@ -54,16 +57,31 @@ export class SendNotificationInteractor implements IInteractor<SendNotificationR
           }
 
           const { subscription, campaign } = notification;
-          const result = await this.send(subscription.endpoint, subscription.p256dh, subscription.auth, campaign.heading, campaign.content, campaign.url);
+          const p256dh = subscription.p256dh.toString('base64');
+          const auth = subscription.auth.toString('base64');
+          const responseCode = await this.pushService.push(subscription.endpoint, p256dh, auth, campaign.heading, campaign.content, campaign.url);
+
+          if (responseCode >= 500) {
+            throw new SendNotificationRemoteServerError(responseCode);
+          }
 
           const prismaNow = this.dateService.fixPrismaWriteDate(this.dateService.getDate());
 
           await t.notification.update({
-            data: { sent: prismaNow },
+            data: { sent: prismaNow, responseCode },
             where: { campaignSubscription: { campaignId: campaignIdBin, subscriptionId: subscriptionIdBin } },
           });
 
-          return result;
+          const success = !(responseCode >= 400);
+
+          if (!success) {
+            await t.subscription.update({
+              data: { errorCode: responseCode },
+              where: { subscriptionId: subscriptionIdBin },
+            });
+          }
+
+          return success;
         }, {
           isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
           timeout: SendNotificationInteractor.transactionTimeout,
@@ -75,18 +93,10 @@ export class SendNotificationInteractor implements IInteractor<SendNotificationR
         throw err;
       }
 
-      return Result.success(success);
+      return Result.success(sendSuccess);
     } catch (err) {
       this.logger.error('error sending notification', err instanceof Error ? err.message : err);
       return Result.fail(err instanceof Error ? err : Error('unknown error'));
     }
-  }
-
-  private async send(endpoint: string, p256dh: Buffer | null, auth: Buffer | null, heading: string, content: string, url: string | null): Promise<boolean> {
-    const httpResponse = await this.pushService.push(endpoint, p256dh, auth, heading, content, url);
-    if (httpResponse >= 400) {
-      return false;
-    }
-    return true;
   }
 }

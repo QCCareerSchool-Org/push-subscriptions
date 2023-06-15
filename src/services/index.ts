@@ -9,10 +9,13 @@ import { WebPushPushService } from './push/webPushPushService';
 import { UUIDService } from './uuid/uuidService';
 
 export const environmentConfigService = new EnvironmentConfigService();
+
+const { push } = environmentConfigService.config;
+
 export const winstonLoggerService = new WinstonLoggerService();
 export const uuidService = new UUIDService();
 export const dateService = new DateService();
 export const nodeCryptoService = new NodeCryptoService();
 export const jwtService = new JWTService(jwtPrivateKey, jwtPublicKey);
 export const ipaddrJSIPAddressService = new IpaddrJSIPAddressService();
-export const webPushPushService = new WebPushPushService(environmentConfigService.config.vapid.privateKey, environmentConfigService.config.vapid.publicKey);
+export const webPushPushService = new WebPushPushService(push.emailAddress, push.vapid.privateKey, push.vapid.publicKey);

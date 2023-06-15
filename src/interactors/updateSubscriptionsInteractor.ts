@@ -10,9 +10,9 @@ export type UpdateSubscriptionsRequest = {
   oldEndpoint: string;
   endpoint: string;
   /** base64 */
-  auth: string | null;
+  auth: string;
   /** base64 */
-  p256dh: string | null;
+  p256dh: string;
   /** DOMHighResTimeStamp */
   expirationTime: number | null;
 };
@@ -38,8 +38,8 @@ export class UpdateSubscriptionsInteractor implements IInteractor<UpdateSubscrip
       const data = {
         endpoint: request.endpoint,
         expirationTime: request.expirationTime,
-        auth: request.auth === null ? null : Buffer.from(request.auth, 'base64'),
-        p256dh: request.p256dh === null ? null : Buffer.from(request.p256dh, 'base64'),
+        auth: Buffer.from(request.auth, 'base64'),
+        p256dh: Buffer.from(request.p256dh, 'base64'),
       };
 
       const batchPayload = await this.prisma.subscription.updateMany({

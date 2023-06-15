@@ -14,9 +14,9 @@ export type UpdateSubscriptionRequest = {
   websiteName: string;
   endpoint: string;
   /** base64 */
-  auth: string | null;
+  auth: string;
   /** base64 */
-  p256dh: string | null;
+  p256dh: string;
   /** DOMHighResTimeStamp */
   expirationTime: number | null;
   firstName: string | null;
@@ -109,8 +109,8 @@ export class UpdateSubscriptionInteractor implements IInteractor<UpdateSubscript
               websiteId: website.websiteId,
               endpoint: request.endpoint,
               expirationTime: request.expirationTime,
-              p256dh: request.p256dh === null ? null : Buffer.from(request.p256dh, 'base64'),
-              auth: request.auth === null ? null : Buffer.from(request.auth, 'base64'),
+              p256dh: Buffer.from(request.p256dh, 'base64'),
+              auth: Buffer.from(request.auth, 'base64'),
               firstName: request.firstName,
               lastName: request.lastName,
               emailAddress: request.emailAddress,

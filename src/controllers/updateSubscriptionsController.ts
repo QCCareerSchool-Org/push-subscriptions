@@ -12,8 +12,8 @@ type Request = {
   body: {
     endpoint: string;
     expirationTime: number | null;
-    p256dh: string | null;
-    auth: string | null;
+    p256dh: string;
+    auth: string;
   };
 };
 
@@ -29,8 +29,8 @@ export class UpdateSubscriptionsController extends BaseController<Request, Respo
     const bodySchema: yup.Schema<Request['body']> = yup.object({
       endpoint: yup.string().defined(),
       expirationTime: yup.number().nullable().defined(),
-      p256dh: yup.string().nullable().defined(),
-      auth: yup.string().nullable().defined(),
+      p256dh: yup.string().defined(),
+      auth: yup.string().defined(),
     });
     try {
       const [ query, body ] = await Promise.all([

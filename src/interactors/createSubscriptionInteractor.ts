@@ -13,9 +13,9 @@ export type CreateSubscriptionRequest = {
   websiteName: string;
   endpoint: string;
   /** base64 */
-  auth: string | null;
+  auth: string;
   /** base64 */
-  p256dh: string | null;
+  p256dh: string;
   /** DOMHighResTimeStamp */
   expirationTime: number | null;
   meta?: {
@@ -25,6 +25,25 @@ export type CreateSubscriptionRequest = {
     interests?: string[];
   };
   ipAddress: string | null;
+  userAgent: string | null;
+  browser: string | null;
+  browserVersion: string | null;
+  mobile: boolean | null;
+  os: string | null;
+  city: string | null;
+  country: string | null;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+type Payload = {
+  expirationTime: number | null;
+  auth: Buffer;
+  p256dh: Buffer;
+  firstName: string | null;
+  lastName: string | null;
+  emailAddress: string | null;
+  ipAddress: Buffer | null;
   userAgent: string | null;
   browser: string | null;
   browserVersion: string | null;
@@ -55,10 +74,10 @@ export class CreateSubscriptionInteractor implements IInteractor<CreateSubscript
     try {
       const prismaNow = this.dateService.fixPrismaWriteDate(this.dateService.getDate());
 
-      const data: Record<string, unknown> = {
+      const data: Partial<Payload> = {
         expirationTime: request.expirationTime,
-        auth: request.auth === null ? null : Buffer.from(request.auth, 'base64'),
-        p256dh: request.p256dh === null ? null : Buffer.from(request.p256dh, 'base64'),
+        auth: Buffer.from(request.auth, 'base64'),
+        p256dh: Buffer.from(request.p256dh, 'base64'),
       };
 
       if (request.meta) {
@@ -136,7 +155,7 @@ export class CreateSubscriptionInteractor implements IInteractor<CreateSubscript
           } else {
             const newSubscription = await t.subscription.create({
               data: {
-                ...data,
+                ...data as Payload,
                 subscriptionId: this.uuidService.uuidToBin(this.uuidService.createUUID()),
                 websiteId: website.websiteId,
                 endpoint: request.endpoint,

@@ -12,8 +12,8 @@ type Request = {
     websiteName: string;
     endpoint: string;
     expirationTime: number | null;
-    p256dh: string | null;
-    auth: string | null;
+    p256dh: string;
+    auth: string;
     meta?: {
       firstName: string | null;
       lastName: string | null;
@@ -32,8 +32,8 @@ export class CreateSubscriptionController extends BaseController<Request, Respon
       websiteName: yup.string().defined(),
       endpoint: yup.string().defined(),
       expirationTime: yup.number().nullable().defined(),
-      p256dh: yup.string().nullable().defined(),
-      auth: yup.string().nullable().defined(),
+      p256dh: yup.string().defined(),
+      auth: yup.string().defined(),
       meta: yup.object({
         firstName: yup.string().nullable().defined(),
         lastName: yup.string().nullable().defined(),

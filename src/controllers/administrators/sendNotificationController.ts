@@ -2,7 +2,7 @@ import * as yup from 'yup';
 
 import { sendNotificationInteractor } from '../../interactors/administrators';
 import type { SendNotificationResponse } from '../../interactors/administrators/sendNotificationInteractor';
-import { SendNotificationAlreadySent, SendNotificationNotFound } from '../../interactors/administrators/sendNotificationInteractor';
+import { SendNotificationAlreadySent, SendNotificationNotFound, SendNotificationRemoteServerError } from '../../interactors/administrators/sendNotificationInteractor';
 import { BaseController } from '../baseController';
 
 type Request = {
@@ -50,6 +50,10 @@ export class SendNotificationController extends BaseController<Request, Response
         return this.notFound('Notification not found');
       case SendNotificationAlreadySent:
         return this.badRequest('Notification already sent');
+      case SendNotificationRemoteServerError: {
+        const responseCode = (result.error as SendNotificationRemoteServerError).responseCode;
+        return this.badRequest(`The remote server responded with a ${responseCode} error`);
+      }
       default:
         return this.internalServerError(result.error.message);
     }

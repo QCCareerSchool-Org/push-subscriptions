@@ -19,9 +19,12 @@ export type Config = {
     pass: string;
     mode: 'TLS' | 'STARTTLS' | 'INSECURE';
   };
-  vapid: {
-    publicKey: string;
-    privateKey: string;
+  push: {
+    emailAddress: string;
+    vapid: {
+      publicKey: string;
+      privateKey: string;
+    };
   };
 };
 
