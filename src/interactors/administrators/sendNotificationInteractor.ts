@@ -4,12 +4,14 @@ import { Prisma } from '@prisma/client';
 import type { IInteractor } from '..';
 import type { IDateService } from '../../services/date';
 import type { ILoggerService } from '../../services/logger';
+import type { IPushService } from '../../services/push';
 import type { IUUIDService } from '../../services/uuid';
 import type { ResultType } from '../result';
 import { Result } from '../result';
 
 export type SendNotificationRequest = {
-  notificationId: string;
+  campaignId: string;
+  subscriptionId: string;
 };
 
 export type SendNotificationResponse = boolean;
@@ -26,66 +28,42 @@ export class SendNotificationInteractor implements IInteractor<SendNotificationR
     private readonly prisma: PrismaClient,
     private readonly uuidService: IUUIDService,
     private readonly dateService: IDateService,
+    private readonly pushService: IPushService,
     private readonly logger: ILoggerService,
   ) { /* empty */ }
 
   public async execute(request: SendNotificationRequest): Promise<ResultType<SendNotificationResponse>> {
     try {
       const campaignIdBin = this.uuidService.uuidToBin(request.campaignId);
+      const subscriptionIdBin = this.uuidService.uuidToBin(request.subscriptionId);
 
-      const prismaNow = this.dateService.fixPrismaWriteDate(this.dateService.getDate());
-
-      let insertedCount: number;
+      let success: boolean;
 
       try {
-        insertedCount = await this.prisma.$transaction(async t => {
-          const campaign = await t.campaign.findUnique({
-            where: { campaignId: campaignIdBin },
-            include: { interests: true },
+        success = await this.prisma.$transaction(async t => {
+          const notification = await t.notification.findUnique({
+            where: { campaignSubscription: { campaignId: campaignIdBin, subscriptionId: subscriptionIdBin } },
+            include: { campaign: true, subscription: true },
           });
-          if (!campaign) {
+          if (!notification) {
             throw new SendNotificationNotFound();
           }
 
-          if (campaign.finalized !== null) {
-            throw new SendNotificationAlreadyFinalized();
+          if (notification.sent !== null) {
+            throw new SendNotificationAlreadySent();
           }
 
-          await t.campaign.update({
-            data: { finalized: prismaNow },
-            where: { campaignId: campaignIdBin },
+          const { subscription, campaign } = notification;
+          const result = await this.send(subscription.endpoint, subscription.p256dh, subscription.auth, campaign.heading, campaign.content, campaign.url);
+
+          const prismaNow = this.dateService.fixPrismaWriteDate(this.dateService.getDate());
+
+          await t.notification.update({
+            data: { sent: prismaNow },
+            where: { campaignSubscription: { campaignId: campaignIdBin, subscriptionId: subscriptionIdBin } },
           });
 
-          // this takes about 1/5 the time as calling findMany and then calling createMany
-          if (campaign.interests.length) {
-            await t.$queryRaw`
-INSERT INTO sends
-SELECT DISTINCT ci.campaign_id, s.subscription_id, ci.website_id, null, null, null, NOW(6)
-FROM subscriptions s
-JOIN subscriptions_interests si ON si.subscription_id = s.subscription_id
-JOIN campaigns_interests ci ON ci.interest_id = si.interest_id
-WHERE ci.campaign_id = ${campaignIdBin} AND s.unsubscribed = 0 AND s.error_code IS NULL`;
-          } else {
-            await t.$queryRaw`
-INSERT INTO sends
-SELECT c.campaign_id, s.subscription_id, c.website_id, null, null, null, NOW(6)
-FROM subscriptions s
-JOIN campaigns c ON c.website_id = s.website_id
-WHERE c.campaign_id = ${campaignIdBin} AND s.unsubscribed = 0 AND s.error_code IS NULL`;
-          }
-
-          const aggregate = await t.send.aggregate({
-            _count: { _all: true },
-            where: { campaignId: campaignIdBin },
-          });
-
-          const count = aggregate._count._all;
-
-          if (count === 0) {
-            throw new SendNotificationNoMatchingSubscriptions();
-          }
-
-          return count;
+          return result;
         }, {
           isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
           timeout: SendNotificationInteractor.transactionTimeout,
@@ -97,10 +75,18 @@ WHERE c.campaign_id = ${campaignIdBin} AND s.unsubscribed = 0 AND s.error_code I
         throw err;
       }
 
-      return Result.success(insertedCount);
+      return Result.success(success);
     } catch (err) {
-      this.logger.error('error finalizing campaign', err instanceof Error ? err.message : err);
+      this.logger.error('error sending notification', err instanceof Error ? err.message : err);
       return Result.fail(err instanceof Error ? err : Error('unknown error'));
     }
+  }
+
+  private async send(endpoint: string, p256dh: Buffer | null, auth: Buffer | null, heading: string, content: string, url: string | null): Promise<boolean> {
+    const httpResponse = await this.pushService.push(endpoint, p256dh, auth, heading, content, url);
+    if (httpResponse >= 400) {
+      return false;
+    }
+    return true;
   }
 }

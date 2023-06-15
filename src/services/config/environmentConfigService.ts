@@ -51,6 +51,16 @@ export class EnvironmentConfigService implements IConfigService {
       throw Error('Environment variable SMTP_MODE is invalid');
     }
 
+    const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+    if (typeof vapidPrivateKey === 'undefined') {
+      throw Error('Environment variable VAPID_PRIVATE_KEY is undefined');
+    }
+
+    const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+    if (typeof vapidPublicKey === 'undefined') {
+      throw Error('Environment variable VAPID_PUBLIC_KEY is undefined');
+    }
+
     this.config = {
       environment,
       port,
@@ -67,6 +77,10 @@ export class EnvironmentConfigService implements IConfigService {
         user: smtpUser,
         pass: smtpPassword,
         mode: smtpMode,
+      },
+      vapid: {
+        publicKey: vapidPrivateKey,
+        privateKey: vapidPublicKey,
       },
     };
   }

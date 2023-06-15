@@ -19,6 +19,10 @@ export type Config = {
     pass: string;
     mode: 'TLS' | 'STARTTLS' | 'INSECURE';
   };
+  vapid: {
+    publicKey: string;
+    privateKey: string;
+  };
 };
 
 export interface IConfigService {
