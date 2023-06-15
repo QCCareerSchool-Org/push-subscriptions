@@ -62,7 +62,7 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
 INSERT INTO sends
 SELECT ${campaignIdBin}, s.subscription_id, ${campaign.websiteId}, null, null, null, NOW()
 FROM subscriptions s
-JOIN subscription_interests si USING(subscription_id)
+JOIN subscriptions_interests si USING(subscription_id)
 WHERE website_id = ${campaign.websiteId} AND interest_id IN (${campaign.interests.map(i => i.interestId).join()})`;
           } else {
             await t.$queryRaw`
