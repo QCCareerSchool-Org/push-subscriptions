@@ -61,7 +61,7 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
           if (campaign.interests.length) {
             await t.$queryRaw`
 INSERT INTO sends
-SELECT DISTINCT ci.campaign_id, s.subscription_id, s.website_id, null, null, null, NOW()
+SELECT DISTINCT ci.campaign_id, s.subscription_id, s.website_id, null, null, null, NOW(6)
 FROM subscriptions s
 JOIN subscriptions_interests si ON si.subscription_id = s.subscription_id
 JOIN campaigns_interests ci ON ci.interest_id = si.interest_id
@@ -69,7 +69,7 @@ WHERE s.website_id = ${campaign.websiteId} AND ci.campaign_id = ${campaignIdBin}
           } else {
             await t.$queryRaw`
 INSERT INTO sends
-SELECT ${campaignIdBin}, s.subscription_id, s.website_id, null, null, null, NOW()
+SELECT ${campaignIdBin}, s.subscription_id, s.website_id, null, null, null, NOW(6)
 FROM subscriptions s
 WHERE s.website_id = ${campaign.websiteId}`;
           }
@@ -81,9 +81,9 @@ WHERE s.website_id = ${campaign.websiteId}`;
 
           const count = aggregate._count._all;
 
-          if (count === 0) {
-            throw new FinalizeCampaignNoMatchingSubscriptions();
-          }
+          // if (count === 0) {
+          //   throw new FinalizeCampaignNoMatchingSubscriptions();
+          // }
 
           return count;
         }, {
