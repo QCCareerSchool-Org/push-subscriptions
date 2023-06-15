@@ -88,6 +88,7 @@ model Campaign {
   heading       String             @db.VarChar(191)
   content       String             @db.Text
   url           String?            @db.VarChar(1024)
+  image         String?            @db.VarChar(1024)
   finalized     DateTime?          @db.Timestamp(6)
   sent          DateTime?          @db.Timestamp(6)
   finished      DateTime?          @db.Timestamp(6)

@@ -59,7 +59,7 @@ export class SendNotificationInteractor implements IInteractor<SendNotificationR
           const { subscription, campaign } = notification;
           const p256dh = subscription.p256dh.toString('base64');
           const auth = subscription.auth.toString('base64');
-          const responseCode = await this.pushService.push(subscription.endpoint, p256dh, auth, campaign.heading, campaign.content, campaign.url, 'https://i0.wp.com/blog.meme.com/wp-content/uploads/hidethepainharold.jpeg?fit=1200%2C675&ssl=1');
+          const responseCode = await this.pushService.push(subscription.endpoint, p256dh, auth, campaign.heading, campaign.content, campaign.url ?? undefined, campaign.image ?? undefined, undefined, [ 400, 200, 100, 100, 100, 100, 100 ]);
 
           if (responseCode >= 500) {
             throw new SendNotificationRemoteServerError(responseCode);
