@@ -65,7 +65,7 @@ export class SendNotificationInteractor implements IInteractor<SendNotificationR
 
           return result;
         }, {
-          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
           timeout: SendNotificationInteractor.transactionTimeout,
         });
       } catch (err) {
