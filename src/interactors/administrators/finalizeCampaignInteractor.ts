@@ -55,7 +55,8 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
 INSERT INTO sends
 SELECT ${campaignIdBin}, subscription_id, ${campaign.websiteId}, null, null, null, NOW()
 FROM subscriptions
-WHERE website_id = ${campaign.websiteId}`;
+WHERE website_id = ${campaign.websiteId}
+RETURNING *`;
 
           console.log(x);
 
