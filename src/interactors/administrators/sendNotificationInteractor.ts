@@ -8,18 +8,17 @@ import type { IUUIDService } from '../../services/uuid';
 import type { ResultType } from '../result';
 import { Result } from '../result';
 
-export type FinalizeCampaignRequest = {
-  campaignId: string;
+export type SendNotificationRequest = {
+  notificationId: string;
 };
 
-export type FinalizeCampaignResponse = number;
+export type SendNotificationResponse = boolean;
 
-export class FinalizeCampaignError extends Error { }
-export class FinalizeCampaignNotFound extends FinalizeCampaignError { }
-export class FinalizeCampaignAlreadyFinalized extends FinalizeCampaignError { }
-export class FinalizeCampaignNoMatchingSubscriptions extends FinalizeCampaignError { }
+export class SendNotificationError extends Error { }
+export class SendNotificationNotFound extends SendNotificationError { }
+export class SendNotificationAlreadySent extends SendNotificationError { }
 
-export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignRequest, FinalizeCampaignResponse> {
+export class SendNotificationInteractor implements IInteractor<SendNotificationRequest, SendNotificationResponse> {
 
   public static transactionTimeout = 30_000; // 30 seconds
 
@@ -30,7 +29,7 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
     private readonly logger: ILoggerService,
   ) { /* empty */ }
 
-  public async execute(request: FinalizeCampaignRequest): Promise<ResultType<FinalizeCampaignResponse>> {
+  public async execute(request: SendNotificationRequest): Promise<ResultType<SendNotificationResponse>> {
     try {
       const campaignIdBin = this.uuidService.uuidToBin(request.campaignId);
 
@@ -45,11 +44,11 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
             include: { interests: true },
           });
           if (!campaign) {
-            throw new FinalizeCampaignNotFound();
+            throw new SendNotificationNotFound();
           }
 
           if (campaign.finalized !== null) {
-            throw new FinalizeCampaignAlreadyFinalized();
+            throw new SendNotificationAlreadyFinalized();
           }
 
           await t.campaign.update({
@@ -60,7 +59,7 @@ export class FinalizeCampaignInteractor implements IInteractor<FinalizeCampaignR
           // this takes about 1/5 the time as calling findMany and then calling createMany
           if (campaign.interests.length) {
             await t.$queryRaw`
-INSERT INTO notifications
+INSERT INTO sends
 SELECT DISTINCT ci.campaign_id, s.subscription_id, ci.website_id, null, null, null, NOW(6)
 FROM subscriptions s
 JOIN subscriptions_interests si ON si.subscription_id = s.subscription_id
@@ -68,14 +67,14 @@ JOIN campaigns_interests ci ON ci.interest_id = si.interest_id
 WHERE ci.campaign_id = ${campaignIdBin} AND s.unsubscribed = 0 AND s.error_code IS NULL`;
           } else {
             await t.$queryRaw`
-INSERT INTO notifications
+INSERT INTO sends
 SELECT c.campaign_id, s.subscription_id, c.website_id, null, null, null, NOW(6)
 FROM subscriptions s
 JOIN campaigns c ON c.website_id = s.website_id
 WHERE c.campaign_id = ${campaignIdBin} AND s.unsubscribed = 0 AND s.error_code IS NULL`;
           }
 
-          const aggregate = await t.notification.aggregate({
+          const aggregate = await t.send.aggregate({
             _count: { _all: true },
             where: { campaignId: campaignIdBin },
           });
@@ -83,16 +82,16 @@ WHERE c.campaign_id = ${campaignIdBin} AND s.unsubscribed = 0 AND s.error_code I
           const count = aggregate._count._all;
 
           if (count === 0) {
-            throw new FinalizeCampaignNoMatchingSubscriptions();
+            throw new SendNotificationNoMatchingSubscriptions();
           }
 
           return count;
         }, {
           isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-          timeout: FinalizeCampaignInteractor.transactionTimeout,
+          timeout: SendNotificationInteractor.transactionTimeout,
         });
       } catch (err) {
-        if (err instanceof FinalizeCampaignError) {
+        if (err instanceof SendNotificationError) {
           return Result.fail(err);
         }
         throw err;

@@ -46,7 +46,7 @@ model Subscription {
   modified       DateTime               @default(now()) @db.Timestamp(6)
   websites       Website                @relation(fields: [websiteId], references: [websiteId], map: "FK_subscriptions_websites")
   interests      SubscriptionInterest[]
-  sends          Send[]
+  notifications  Notification[]
 
   @@index([websiteId], map: "website_id")
   @@index([subscriptionId, websiteId], map: "subscription_idwebsite_id") // used by FK not included in prisma
@@ -94,7 +94,7 @@ model Campaign {
   created       DateTime           @default(now()) @db.Timestamp(6)
   modified      DateTime           @default(now()) @db.Timestamp(6)
   website       Website            @relation(fields: [websiteId], references: [websiteId], map: "FK_campaigns_websites")
-  sends         Send[]
+  notifications Notification[]
   interests     CampaignInterest[]
 
   @@index([websiteId], map: "website_id")
@@ -114,7 +114,7 @@ model CampaignInterest {
   @@map("campaigns_interests")
 }
 
-model Send {
+model Notification {
   campaignId     Bytes        @map("campaign_id") @db.Binary(16)
   subscriptionId Bytes        @map("subscription_id") @db.Binary(16)
   websiteId      Bytes        @map("website_id") @db.Binary(16)
@@ -122,13 +122,13 @@ model Send {
   clicked        DateTime?    @db.Timestamp(6)
   responseCode   Int?         @map("response_code") @db.SmallInt
   created        DateTime     @default(now()) @db.Timestamp(6)
-  campaign       Campaign     @relation(fields: [campaignId], references: [campaignId], map: "FK_sends_campaigns")
-  subscription   Subscription @relation(fields: [subscriptionId], references: [subscriptionId], map: "FK_sends_subscriptions")
+  campaign       Campaign     @relation(fields: [campaignId], references: [campaignId], map: "FK_notifications_campaigns")
+  subscription   Subscription @relation(fields: [subscriptionId], references: [subscriptionId], map: "FK_notifications_subscriptions")
 
   @@id([campaignId, subscriptionId], name: "campaignSubscription")
   @@index([subscriptionId, websiteId], map: "subscription_id_website_id") // used by FK not included in prisma
   @@index([campaignId, websiteId], map: "campaign_id_website_id") // used by FK not included in prisma
-  @@map("sends")
+  @@map("notifications")
 }
 
 
