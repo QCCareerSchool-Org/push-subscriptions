@@ -8,7 +8,7 @@ export class WebPushPushService implements IPushService {
 
   public async push(endpoint: string, p256dh: string, auth: string, heading: string, content: string, url: string | null): Promise<number> {
     // webpush.setGCMAPIKey('<Your GCM API Key Here>');
-    webpush.setVapidDetails(this.emailAddress, this.publicKey, this.privateKey);
+    webpush.setVapidDetails(`mailto:${this.emailAddress}`, this.publicKey, this.privateKey);
 
     // This is the same output of calling JSON.stringify on a PushSubscription
     const pushSubscription = {
